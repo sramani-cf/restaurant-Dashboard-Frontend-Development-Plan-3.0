@@ -1,0 +1,374 @@
+## art I: The Core Architecture & Unified Experience
+
+This document outlines the complete architectural and feature specification for Aura, a next-generation restaurant management system designed for the modern operational landscape. The system is conceived as a unified platform that transcends the traditional boundaries of siloed restaurant software. It serves not merely as a tool for recording transactions but as a partner in optimizing every facet of the restaurant business. The architecture is designed to be consumed by a frontend built with Next.js, leveraging the aesthetic and component capabilities of Aceternity UI and Shadcn UI to deliver a futuristic and highly functional user experience.
+
+### 1. The Command Center: The Unified Dashboard
+
+The Command Center is the primary interface upon authentication, providing a holistic, real-time, and role-specific overview of the entire operation. It is engineered to be more than a static collection of charts; it is a living, breathing control panel that mirrors the restaurant's pulse. This design philosophy moves away from reactive data review towards in-the-moment decision-making, effectively creating a virtual model of the live operational environment.
+
+### 1.1. The "At-a-Glance" Philosophy & Role-Based Personalization
+
+The core principle of the Command Center is to deliver the most relevant information to the right person at the right time, without overwhelming them. To achieve this, the dashboard is built upon a widget-based, drag-and-drop interface. This allows for deep customization, enabling users to tailor their view to their specific responsibilities and priorities. While highly customizable, the system provides well-designed default layouts based on user roles, ensuring immediate utility from the first login.
+
+- **General Manager View:** This layout prioritizes high-level Key Performance Indicators (KPIs) that provide a comprehensive health check of the business. Key widgets include daily and weekly net sales trends, real-time labor cost percentage against sales, overall customer satisfaction scores, and table turnover rates. This view is designed to help managers make informed decisions that drive growth and profitability on a macro level.
+- **Head Chef View:** The chef's dashboard is focused on the back-of-house. It surfaces real-time inventory levels for critical, high-velocity ingredients, live food cost percentages for items being sold, order ticket times, and overall Kitchen Display System (KDS) performance metrics. This allows the chef to manage costs, ensure quality, and maintain kitchen efficiency during service.
+- **Owner/Operator View:** For stakeholders overseeing multiple locations, this view emphasizes comparative analytics. Widgets display sales, profitability, and labor metrics across all venues, allowing for easy identification of high-performing and underperforming locations. The focus is on long-term strategic metrics, such as customer lifetime value, return on investment for marketing campaigns, and multi-location inventory variance.
+
+This user-centric design directly addresses the fundamental requirement for dashboards to be intuitive and tailored to the end-user's goals. By filtering out irrelevant data and highlighting actionable metrics, the system prevents information overload and empowers staff at every level to make better, faster decisions.
+
+### 1.3. Real-Time Metric Streams & Alerts
+
+The Command Center is not a static report that refreshes periodically; it is a dynamic surface that streams data in real time. Widgets for key operational metrics are live, providing an immediate and accurate picture of the business at any given moment. These streams include:
+
+- **Sales Velocity:** A live graph showing sales per hour, allowing managers to track performance against forecasts throughout a shift.
+- **Table Status & Turnover:** Real-time updates from the floor plan, showing how many tables are in each stage of the dining cycle and calculating the current turnover rate.
+- **Labor vs. Sales:** A live comparison of accrued labor costs against real-time sales, providing an up-to-the-minute labor cost percentage.
+- **Order Inflow:** A live feed of incoming orders from all channels, including in-house POS, online ordering, and third-party delivery platforms.
+
+### 2. System Architecture & Data Flow
+
+The foundation of Aura's power and scalability is a meticulously designed architecture that prioritizes modularity, data integrity, and seamless information flow. A well-defined data model is the critical substrate upon which all advanced features, from personalization to analytics, are built.
+
+### 2.1. Modular, Service-Oriented Architecture
+
+The system is architected as a collection of interconnected yet independent modules (e.g., POS, Inventory, Staff Management, Analytics). This approach is standard practice for robust, modern software and offers several key advantages.
+
+- **Scalability:** A restaurant can adopt the modules it needs and add more as it grows. A small pop-up or food truck might initially only require the POS and Inventory modules, while a full-service restaurant group will leverage the entire suite, including multi-location management and advanced analytics. This "pay as you grow" model makes the system accessible to a wider range of businesses.
+- **Flexibility:** Each module can be developed, updated, and deployed independently. This accelerates the development cycle and reduces the risk of system-wide failures. If the Reservations module requires an update, it can be deployed without affecting the live POS system.
+- **Extensibility:** A modular architecture simplifies the integration of third-party services. The system is designed with a rich API layer, allowing it to connect seamlessly with accounting software, delivery aggregators, property management systems (PMS), and other specialized tools. This ability to integrate with an extensive network of partners is a crucial competitive feature, preventing vendor lock-in and allowing restaurants to build a best-of-breed technology stack.
+
+### 2.2. The Unified Data Model
+
+The most critical architectural concept within Aura is the Unified Data Model. Instead of storing data in isolated, module-specific databases, the system establishes a central, canonical source of truth for every core business entity. This creates rich, interconnected profiles that provide a 360-degree view of the entire operation.
+
+For example, a traditional system might have customer information in the reservation system, separate order history in the POS, and loyalty points in another database. In Aura, there is a single `Customer` entity that aggregates all of this data and more:
+
+- **`Customer` Entity:** A unified profile containing demographic information, contact details, complete purchase history from the POS, reservation history (including seating preferences and special requests), loyalty program status (points, rewards, tier), and all submitted feedback (ratings, reviews, direct messages). This comprehensive view is the fuel for all personalization features.
+- **`MenuItem` Entity:** This entity links to its recipe (a list of `Ingredient` entities), its sales history across all channels, its current food cost (calculated in real-time from ingredient prices), customer ratings, and its position in the menu engineering matrix.
+- **`Employee` Entity:** This profile includes scheduling information, payroll data, performance metrics (e.g., sales per hour, average check size, upselling success rate), and training certifications.
+
+By establishing clear relationships between these unified entities, the system can uncover powerful, second-order insights. It can identify which `Employee` is most effective at selling a particular `MenuItem` to a specific `Customer` segment, or correlate a drop in a `MenuItem`'s rating with a change in `Supplier` for a key `Ingredient`. This deep, relational understanding of the business is what enables the system to provide actionable insights. The frontend developer will interact with this rich, interconnected data via a well-defined GraphQL or RESTful API, ensuring that even complex queries can be performed efficiently.
+
+### Table 1: Core Data Entity Relationship Diagram (Conceptual)
+
+This table outlines the primary data entities within the Aura system and their fundamental relationships. It serves as the foundational data map for frontend development, defining the structure and interconnectedness of the information that will be fetched and displayed.
+
+| Entity | Description | Key Attributes | Primary Relationships |
+| --- | --- | --- | --- |
+| **Restaurant** | Represents a single restaurant location or a brand. | `restaurant_id`, `name`, `address`, `timezone` | Parent to most other entities. |
+| **User/Employee** | A staff member with access to the system. | `user_id`, `name`, `email`, `role_id` | `Role` (Many-to-One), `Order` (One-to-Many, as server) |
+| **Role** | Defines permissions and access levels within the system. | `role_id`, `role_name`, `permissions_json` | `User` (One-to-Many) |
+| **Customer** | A guest of the restaurant. | `customer_id`, `name`, `contact_info`, `preferences` | `Order` (One-to-Many), `Reservation` (One-to-Many) |
+| **Order** | A single transaction, containing multiple items. | `order_id`, `customer_id`, `table_id`, `total_amount` | `Customer` (Many-to-One), `OrderItem` (One-to-Many) |
+| **OrderItem** | An individual item within an order. | `order_item_id`, `menu_item_id`, `quantity`, `price` | `Order` (Many-to-One), `MenuItem` (Many-to-One) |
+| **MenuItem** | A dish or beverage available for sale. | `menu_item_id`, `name`, `price`, `category_id` | `MenuCategory` (Many-to-One), `Ingredient` (Many-to-Many via `Recipe`) |
+| **MenuCategory** | A grouping for menu items (e.g., Appetizers, Entrees). | `category_id`, `name` | `MenuItem` (One-to-Many) |
+| **Ingredient** | A raw component used in recipes. | `ingredient_id`, `name`, `unit_of_measure` | `MenuItem` (Many-to-Many via `Recipe`), `InventoryItem` (One-to-One) |
+| **InventoryItem** | A specific stock item linked to a supplier and ingredient. | `inventory_item_id`, `ingredient_id`, `supplier_id`, `cost` | `Ingredient` (One-to-One), `Supplier` (Many-to-One) |
+| **Supplier** | A vendor that provides ingredients or other goods. | `supplier_id`, `name`, `contact_info` | `InventoryItem` (One-to-Many) |
+| **Reservation** | A booking for a table at a specific time. | `reservation_id`, `customer_id`, `table_id`, `party_size` | `Customer` (Many-to-One), `Table` (Many-to-One) |
+| **Table** | A physical table in the restaurant's floor plan. | `table_id`, `table_number`, `capacity`, `status` | `Reservation` (One-to-Many), `Order` (One-to-Many) |
+| **Payment** | A payment transaction associated with an order. | `payment_id`, `order_id`, `amount`, `method` | `Order` (Many-to-One) |
+| **Feedback** | A review or rating submitted by a customer. | `feedback_id`, `customer_id`, `rating`, `comment` | `Customer` (Many-to-One), `Order` (Many-to-One, optional) |
+| **LoyaltyTransaction** | A record of points earned or redeemed. | `loyalty_tx_id`, `customer_id`, `points_change` | `Customer` (Many-to-One) |
+
+Export to Sheets
+
+Export to Sheets
+
+Understanding these relationships is paramount. For instance, the Many-to-Many link between `MenuItem` and `Ingredient` via a `Recipe` join table is what allows the system to perform real-time food cost calculations. When the `cost` attribute of an `InventoryItem` is updated, the system can instantly recalculate the profitability of every `MenuItem` that uses that `Ingredient`. This data structure is not merely descriptive; it is a prescriptive architectural artifact that enables the system's most advanced analytical capabilities.
+
+---
+
+## Part II: Operational Modules - Present & Future
+
+This section provides a detailed breakdown of the core functional modules of the Aura system. Each module is designed to not only meet but exceed current industry standards by integrating advanced automation and a futuristic user experience. The following table provides a high-level summary of this evolution, contrasting the baseline features common in today's systems with the forward-looking vision of Aura.
+
+### Table 2: Module Feature Matrix (Baseline vs. Aura Vision)
+
+| Module | Baseline Features (Today) | Aura Vision (Key Evolutions) |
+| --- | --- | --- |
+| **Point of Sale (POS)** | Static item grids, basic order/payment processing, separate hardware terminals. | Context-aware "Fluid POS" UI, hardware agnosticism, contextual upselling and personalization at the point of interaction. |
+| **Reservations & Seating** | Digital reservation book, basic table status tracking (occupied/free), manual waitlist management. | Interactive 2D floor plan, accurate wait times, automated yield management for seating. |
+| **Menu & Recipe** | Digital menu creation, manual recipe costing, periodic menu engineering analysis. | Dynamic, multi-channel menu deployment, real-time ingredient-level costing, data-driven menu optimization suggestions. |
+| **Order Management** | Basic KDS for order display, manual consolidation of online/delivery orders. | Unified order lifecycle hub, rule-based order routing, prep-time estimation, automated delivery driver dispatch integration. |
+| **Inventory & Supply** | Periodic manual stock counts, simple low-stock alerts, spreadsheet-based ordering. | Perpetual real-time inventory, data-driven ordering (factoring in sales, events), automated supplier POs. |
+| **Workforce Management** | Manual schedule creation, basic time tracking, separate payroll processing. | Optimized schedule generation, real-time performance dashboards, gamified employee engagement, integrated one-click payroll. |
+| **Analytics & BI** | Historical sales reports, static dashboards, data exports to spreadsheets. | Detailed analytics, natural language querying, automated anomaly detection, cross-module scenario modeling. |
+| **Customer Relationship** | Basic customer database, mass email marketing, simple point-based loyalty programs. | Unified 360° guest profiles, hyper-personalized marketing automation, dynamic loyalty tiers, sentiment analysis of feedback. |
+
+Export to Sheets
+
+### 3. Point of Sale (POS) & Payment Orchestration
+
+The Point of Sale is the transactional heart of the restaurant and the primary point of human interaction with the Aura system. The POS evolves from a static cash register into an adaptable, and data-rich terminal that actively enhances both operational efficiency and the guest experience.
+
+### 3.1. The "Fluid POS" Interface
+
+The Aura POS rejects a one-size-fits-all approach. Its user interface is "fluid," meaning it dynamically adapts its layout and functionality based on the context of its use. This ensures optimal usability for every role and workflow within the restaurant.
+
+- **Counter Service Mode:** For quick-service restaurants or bar terminals, the interface defaults to a highly customizable, grid-based view. This allows cashiers to rapidly input orders for the most popular items with a single tap.
+- **Tableside Mode:** On a server's handheld device (e.g., an iPad Mini or a dedicated mobile POS unit), the interface becomes table-centric. It defaults to the floor plan, allowing servers to manage multiple tables, send orders by course, and process payments directly at the table, which is a key feature for improving service speed and customer satisfaction.
+- **Kiosk Mode:** For customer-facing self-service kiosks, the interface transforms into a visually rich, intuitive experience. It features large, high-quality images of menu items, clear upselling prompts, and a streamlined checkout process designed for users with no training.
+
+The UI/UX design will leverage the capabilities of Aceternity UI and Shadcn UI to create a clean, modern aesthetic. Drawing inspiration from futuristic design trends, the interface will employ glassmorphism and neumorphism to create a sense of depth and tactility. Motion design and subtle micro-interactions will be used purposefully to guide the user's attention, provide clear feedback for actions, and make the interface feel responsive and alive. This focus on engaging, high-quality design is critical, as 94% of first impressions are design-related. The layout will be card-based, with clear information hierarchy and prominent calls to action, reflecting best practices seen in modern SaaS dashboards.
+
+### 3.2. Hardware Agnosticism & Offline Mode
+
+A core architectural principle of Aura is the decoupling of software from proprietary hardware. This is a significant business advantage, directly addressing a key pain point of closed ecosystems like Toast, which require restaurants to purchase their specific hardware. Aura is designed to be a cloud-native, platform-agnostic solution that can run on a wide range of devices:
+
+- **Compatibility:** The POS application will be a progressive web app (PWA) or a native application compatible with iOS, Android, and Windows, allowing restaurants to use existing iPads or Android tablets, or choose from a variety of commercial-grade POS terminals.
+- **Peripherals:** The system will support a broad ecosystem of third-party peripherals, including receipt printers, cash drawers, barcode scanners, and payment terminals, connecting via standard interfaces like USB, Bluetooth, or IP networks.
+
+This flexibility dramatically reduces the upfront capital expenditure for new restaurants and prevents long-term vendor lock-in, a major consideration for business owners.
+
+Furthermore, recognizing that internet connectivity can be unreliable, Aura features a robust **Offline Mode**. If the connection is lost, the POS terminals can continue to operate seamlessly. They can take orders, send them to local kitchen printers or KDS units, and even process encrypted credit card payments (with support for store-and-forward). All transactional data is stored securely on the local device and automatically syncs with the cloud server the moment connectivity is restored. This is a mission-critical feature for any restaurant, ensuring that service is never interrupted by an internet outage.
+
+### 4. Reservations, Seating, & Guest Flow Management
+
+This module is the command center for the front-of-house, designed to optimize every aspect of the guest journey from the moment they consider a booking to their departure. It focuses on maximizing seating capacity, streamlining operations for the host team, and providing a seamless, personalized experience for every guest.
+
+### 4.1. Interactive 2D Floor Plan Management
+
+The core of the module is a dynamic, interactive floor plan that serves as a real-time digital twin of the dining room.
+
+- **Customizable Layout:** Managers can easily design and modify their restaurant's layout using a simple drag-and-drop interface. They can create tables of various shapes and sizes, combine tables to accommodate large parties, define different dining sections (e.g., "Patio," "Bar," "Main Dining Room"), and place other elements like host stands or server stations.
+- **Real-Time Status Visualization:** During service, the floor plan is a live dashboard. Tables are automatically color-coded based on their current status, providing an at-a-glance overview for the entire team. Statuses can include: Available, Reserved, Seated, Order Taken, Appetizers Served, Entrees Served, Paid, and Needs Cleaning. Clicking on any occupied table instantly brings up a detailed card with information about the party, their server, the time they were seated, their current order, and any associated guest notes from the CRM.
+
+### 4.2. Unified Reservation & Waitlist Engine
+
+Aura consolidates bookings and guest flow from every possible channel into a single engine.
+
+- **Omni-Channel Aggregation:** The system captures reservations from the restaurant's website (via a customizable booking widget), third-party platforms like Reserve with Google, phone calls (with manual entry), and walk-ins, ensuring a single source of truth for all bookings and preventing overbooking.
+- **Accurate Wait Times:** For walk-in guests, the system eliminates guesswork. It analyzes historical data for that specific day and time, current table statuses, and the average dining duration of seated guests. It then generates a highly accurate, data-driven wait time quote, which can be communicated to the guest via SMS along with a link to track their place in the virtual queue.
+- **Optimized Table Assignment:** When a new party arrives, the system suggests the optimal table. Its algorithm considers party size, guest preferences (e.g., "requests a booth"), server section rotation to ensure even workloads, and the need to maximize seating for the rest of the service. This automated optimization helps turn tables faster and maximize covers.
+
+### 4.3. Deep Guest CRM Integration
+
+The true power of this module is its seamless integration with the Unified Data Model, specifically the `Customer` entity.
+
+- **Personalized Service:** When a reservation is made or a guest is added to the waitlist, the system automatically links them to their existing customer profile or creates a new one. This surfaces critical information for the host and server directly on the floor plan view. Staff can see guest preferences ("prefers sparkling water"), allergies, dietary restrictions, special dates (anniversary, birthday), and even notes from previous visits ("last time, complained the music was too loud").
+- **Proactive Hospitality:** This information empowers the team to provide a highly personalized and proactive level of service. A host can greet a returning guest by name. A server can be pre-emptively aware of a severe peanut allergy. The restaurant can automatically send a complimentary glass of champagne to a couple celebrating their anniversary. This transforms a standard dining experience into a memorable one, which is the cornerstone of building customer loyalty and positive word-of-mouth.
+
+This deep integration of real-time operational data with rich customer history transforms the nature of front-of-house management. The system moves beyond simple table management to a sophisticated form of "yield management," similar to how airlines and hotels manage their perishable inventory. By understanding demand patterns from the reservation engine and the real-time status of its "inventory" (the tables), the system can make strategic decisions to maximize revenue. For instance, the system could identify a lull in bookings between 5:30 PM and 6:30 PM on a Tuesday and suggest automatically offering a 10% "early bird" discount on the booking widget to drive traffic during that period. Conversely, for a prime-time Saturday 8:00 PM slot, it could automatically require a credit card deposit to reduce no-shows. This represents a fundamental shift from passively filling tables to actively and dynamically managing seating inventory to optimize profitability.
+
+### 5. Menu & Recipe Engineering
+
+This module serves as the culinary and financial core of the Aura system. It bridges the gap between the art of menu creation and the science of profitability, providing the tools to design, cost, and optimize the restaurant's offerings in real time.
+
+### 5.1. Dynamic Menu Management
+
+Aura provides a flexible and powerful interface for all aspects of menu creation and deployment.
+
+- **Intuitive Interface:** Managers and chefs can easily add, edit, clone, and categorize menu items. The system supports rich content, including high-resolution photos, detailed descriptions, allergen information, and complex modifiers with nested options (e.g., Steak -> Temperature -> Medium Rare; Add-ons -> Sautéed Onions, Blue Cheese Crumbles).
+- **Multi-Channel & Multi-Location Deployment:** A key feature for modern restaurants is the ability to manage multiple menus for different contexts. A user can create distinct menus for Lunch, Dinner, Happy Hour, a weekend Brunch, or a special event. Furthermore, the system can manage separate menus for different sales channels, such as the main dine-in menu, a slightly modified and differently priced delivery menu, and a limited catering menu. With a single click, any menu update can be pushed live to all POS terminals, customer-facing kiosks, the restaurant's website, and integrated third-party online ordering platforms. For restaurant groups, this centralized control allows for brand consistency and effortless updates across multiple locations.
+
+### 5.2. Ingredient-Level Costing & Margin Analysis
+
+This is where Aura connects the menu directly to the supply chain and financial performance.
+
+- **Detailed Recipe Creation:** For every `MenuItem`, the system allows for the creation of a precise recipe. This involves linking the dish to specific `Ingredient` entities from the inventory module and defining the exact quantity of each. For example, a "Classic Burger" recipe would specify 1 burger bun, 200g of ground beef, 30g of cheddar cheese, 15g of lettuce, etc.
+- **Real-Time Cost Calculation:** Because the system has a live connection to the `InventoryItem` costs (which are updated with every new supplier invoice), it can calculate the precise food cost for every single menu item in real time. If the price of ground beef increases by 5%, the food cost and profit margin for the "Classic Burger" are updated automatically across the entire system.
+- **Visual Menu Engineering Matrix:** The frontend will present this complex data in a simple, highly visual format. The classic menu engineering matrix plots each menu item on a graph based on its popularity (quantity sold) and profitability (profit margin). Items are categorized into four quadrants :
+    - **Stars (High Profit, High Popularity):** The restaurant's best items. These should be promoted heavily.
+    - **Plowhorses (Low Profit, High Popularity):** Customer favorites that don't make much money. Strategies may include slightly increasing the price or re-engineering the recipe to reduce costs.
+    - **Puzzles (High Profit, Low Popularity):** Profitable but not selling well. Strategies may include better menu placement, server training, or a promotion.
+    - **Dogs (Low Profit, Low Popularity):** Items that should be considered for removal from the menu.
+
+This visual tool empowers managers to instantly identify the financial performance of their menu and make data-driven decisions rather than relying on intuition.
+
+### 6. Order Lifecycle Management
+
+This module provides a unified hub for managing every order from the moment it is placed until it is fulfilled, regardless of its origin. It is designed to eliminate operational silos between dine-in, takeout, and delivery, ensuring a smooth and efficient workflow for both the front-of-house and kitchen staff.
+
+### 6.1. Unified Order Intake Hub
+
+The system aggregates orders from all sales channels into a single, cohesive interface. This eliminates the need for "tablet farms"—the cluster of different tablets for each delivery service that clutters the counter space of many modern restaurants.
+
+- **Direct Integration:** Aura offers direct API integrations with major third-party delivery services (e.g., Uber Eats, DoorDash). Orders from these platforms flow directly into the Aura POS and KDS, just like an in-house order.
+- **Omni-Channel View:** Staff can view and manage all active orders—dine-in, phone-in for pickup, website orders, and third-party delivery—from a single screen. Orders are clearly tagged and color-coded by source and status (e.g., New, In Progress, Ready for Pickup, Out for Delivery).
+
+This centralization streamlines operations, reduces the chance of manual entry errors, and provides a complete picture of order volume at all times, which is critical for effective kitchen management.
+
+### 6.2. Dynamic Kitchen Display System (KDS)
+
+The KDS is the digital nerve center of the kitchen, replacing paper tickets with a dynamic, interactive display. The Aura KDS is designed for high-volume, high-pressure environments.
+
+- **Customizable Workflows:** The system supports routing orders to multiple KDS screens based on item category. For example, appetizers and salads can be sent to the "Cold Station" KDS, while entrees are sent to the "Hot Line" KDS. This ensures the right information gets to the right people.
+- **Real-Time Order Pacing:** The KDS displays ticket times for every order, highlighting any that are approaching or exceeding the target prep time. This allows the head chef or expeditor to quickly identify bottlenecks and reallocate resources.
+- **Durable Hardware:** While the software is hardware-agnostic, the system is designed to work with industry-grade KDS hardware that is resistant to the heat, grease, and spills common in a professional kitchen environment.
+
+### 6.3. Integrated Delivery & Dispatch Management
+
+For restaurants that manage their own delivery fleet or use a mix of services, this feature provides essential control and visibility.
+
+- **Driver Management:** The system includes a lightweight driver management interface, allowing managers to assign orders to available drivers.
+- **Automated Dispatch:** For restaurants using third-party delivery partners, the system can be configured to automatically ping the delivery service and request a driver as soon as the kitchen marks an order as "In Progress."
+- **Real-Time Tracking:** Once a driver is assigned, the order status is updated in real time. The system can provide a tracking link to the customer, allowing them to see their driver's progress on a map, a feature that has become a standard expectation for modern delivery services.
+
+By managing the entire order lifecycle within a single, integrated module, Aura provides unprecedented visibility and control. Managers can analyze performance across all channels, identify which channel is most profitable, and make strategic decisions about where to focus their marketing and operational efforts.
+
+### 7. Inventory & Supply Chain
+
+This module digitizes and automates one of the most complex and critical aspects of restaurant management: tracking and ordering stock. It moves beyond traditional, manual inventory methods to a perpetual, automated system designed to reduce waste, prevent stockouts, and optimize food costs.
+
+### 7.1. Perpetual Real-Time Inventory
+
+The core of the module is a system that tracks inventory levels in real time, eliminating the need for frequent, labor-intensive manual counts.
+
+- **Automated Depletion:** Through its deep integration with the Menu & Recipe module, the system automatically deducts ingredients from inventory the moment a menu item is sold via the POS. When a "Classic Burger" is ordered, the system instantly decrements the on-hand counts for buns, ground beef, cheese, etc., according to the recipe.
+- **Centralized Tracking:** The system tracks everything from raw food ingredients to liquor, paper goods, and cleaning supplies. All stock levels are accessible from any device, anywhere, providing managers with a live view of their inventory without having to be physically present in the stockroom.
+- **Waste & Spoilage Tracking:** The system includes a dedicated interface for logging food waste. Staff can record items that have spoiled, were spilled, or were sent back by a customer, and assign a reason. This data is crucial for identifying areas of operational inefficiency and reducing preventable loss.
+
+### 7.2. Data-Driven Suggested Ordering
+
+Aura replaces manual, intuition-based ordering with a data-driven system.
+
+- **Smart PAR Levels:** Managers can set "PAR levels" (Periodic Automatic Replacement)—the ideal amount of stock to have on hand for each item. The system then uses this as a baseline for its recommendations.
+- **Suggested Ordering:** The system generates suggested purchase orders by analyzing multiple data streams. It doesn't just look at current stock levels; it looks at historical consumption rates and upcoming reservations. For example, it might recommend ordering extra hot dog buns before a weekend with many large party bookings.
+- **Automated PO Generation:** Based on its analysis, the system generates draft purchase orders for each supplier. A manager simply needs to review the suggested quantities, make any adjustments, and approve the order with a single click. The PO is then automatically emailed to the respective supplier. This saves hours of administrative time each week.
+
+### 7.3. Supplier & Cost Management
+
+The module provides a comprehensive toolkit for managing relationships with vendors and controlling costs.
+
+- **Supplier Database:** Maintain a central database of all suppliers, with contact information, delivery schedules, and complete order histories.
+- **Invoice Ingestion:** When a new delivery arrives, staff can use a mobile device to scan the invoice. The system uses Optical Character Recognition (OCR) to automatically digitize the invoice, updating inventory counts and item costs. It also flags any discrepancies between the invoice, the original purchase order, and what was actually received, helping to identify and resolve supplier errors quickly.
+- **Cost Fluctuation Analysis:** The system tracks the price of every ingredient over time and across different suppliers. This allows managers to spot price creep, analyze the cost-effectiveness of each vendor, and make more informed purchasing decisions to protect their profit margins.
+
+By automating the most tedious aspects of inventory management, Aura allows restaurants to run a leaner, more efficient operation. It directly tackles two of the biggest challenges in the industry: reducing food waste and controlling food costs, which are critical for maintaining healthy profit margins.
+
+### 8. Workforce & Staff Augmentation
+
+This module focuses on the restaurant's most valuable asset: its people. It provides a comprehensive suite of tools to streamline scheduling, track performance, manage payroll, and foster a positive and productive work environment. The "augmentation" philosophy means the system is designed to empower staff, not just manage them.
+
+### 8.1. Optimized Schedule Generation
+
+Creating a weekly staff schedule is a time-consuming and complex puzzle. Aura's scheduling tool helps to automate and optimize this process.
+
+- **Data-Driven Scheduling:** The system generates a draft schedule based on sales forecasts. It ensures adequate coverage for predicted busy periods while preventing overstaffing during lulls, helping to control labor costs.
+- **Constraint-Based Logic:** Managers input various constraints, such as employee availability, requested time off, maximum weekly hours, and required certifications (e.g., a certified bartender must be on every evening shift). The system's scheduling engine then generates a compliant and efficient schedule in seconds.
+- **Mobile App for Staff:** Employees can view their schedules, submit availability, request time off, and swap shifts with manager approval, all through a dedicated mobile app. This empowers employees and reduces the administrative burden on managers.
+
+### 8.2. Real-Time Performance Dashboards
+
+The system provides both managers and employees with clear, data-driven insights into performance.
+
+- **Manager View:** Managers have access to dashboards that track key labor metrics in real time, such as actual vs. scheduled hours, sales per labor hour, and overtime costs. This allows them to make on-the-fly adjustments during a shift to stay within budget.
+- **Employee View:** In their mobile app, employees can see their own performance stats, such as total sales, average check size, and tips. The system can also incorporate gamification elements, such as leaderboards for upselling a specific promotional item or achieving the highest sales for the week. This can foster friendly competition and motivate staff to perform at their best.
+
+### 8.3. Integrated Payroll & HR Management
+
+Aura aims to be an all-in-one solution by seamlessly integrating HR and payroll functions.
+
+- **One-Click Payroll:** By combining time tracking data (from an integrated POS clock-in/clock-out feature) with wage information and automated tip calculations, the system can prepare payroll for processing with a single click. It can integrate directly with popular payroll providers to automate payments and tax filings, saving hundreds of hours of administrative time per year.
+- **Digital Onboarding:** New hires can complete all their onboarding paperwork digitally through the employee app, streamlining the process and ensuring compliance.
+- **Employee Engagement:** The module includes tools for internal communication, such as a message board for announcements and a system for recognizing outstanding employee performance. A positive work culture is critical for reducing employee turnover, a major cost for restaurants.
+
+By managing the workforce effectively, Aura helps restaurants optimize their single largest variable expense: labor. More importantly, by providing tools that empower and engage employees, it helps create a more stable, motivated, and high-performing team, which directly translates to a better guest experience and a healthier bottom line.
+
+---
+
+## Part III: Strategic & Analytical Modules
+
+While the operational modules manage the day-to-day functions of the restaurant, the strategic modules are designed to provide the deep insights needed for long-term growth and profitability. This is where the vast amounts of data collected by the Aura system are transformed into clear, actionable business intelligence.
+
+### 9. Advanced Analytics & Business Intelligence
+
+The Analytics module is the brain of the Aura system. It consolidates data from every other module into a powerful, intuitive business intelligence platform. It moves beyond simple historical reporting to provide a comprehensive view of the business, helping operators understand not just *what* happened, but *why* it happened.
+
+### 9.1. Role-Specific Dashboards & Data Visualization
+
+The system provides a suite of pre-built, customizable dashboards tailored to the key analytical areas of a restaurant business. The design of these dashboards follows best practices, using a clear visual hierarchy, ample white space, and the most appropriate chart type for the data being presented to tell a clear story.
+
+- **Sales & Performance Dashboard:** This provides a deep dive into revenue metrics. Users can analyze total sales, sales by product category, sales by channel (dine-in vs. delivery), and sales trends over time. It helps identify peak sales times, top-selling items, and the most effective marketing channels.
+- **Labor Dashboard:** This dashboard focuses on optimizing staffing costs. It visualizes labor costs as a percentage of sales, compares scheduled vs. actual labor hours and costs, and tracks overtime. This allows managers to see how well their schedules are meeting both demand and budget targets.
+- **Inventory & COGS Dashboard:** This provides a clear view of food costs and supply chain efficiency. Key visualizations include food cost percentage, inventory turnover rate, and analysis of food waste. It helps managers identify opportunities to reduce waste, negotiate better prices with suppliers, and optimize menu pricing.
+- **Customer Satisfaction Dashboard:** This dashboard aggregates feedback from all sources, including internal surveys and online review sites. It tracks metrics like the Net Promoter Score (NPS) and average customer satisfaction ratings. Sentiment analysis can automatically categorize text-based feedback to identify common themes (e.g., "slow service," "great cocktails").
+
+### Table 3: Key Performance Indicators (KPIs) by Dashboard
+
+This table outlines the essential KPIs that will be prominently featured on each of the primary analytical dashboards.
+
+| Dashboard | Key Performance Indicators (KPIs) | Purpose |
+| --- | --- | --- |
+| **Sales & Performance** | Net Sales, Guest Count, Average Check Value, Sales per Labor Hour (SPLH), Product Mix (PMIX) Analysis, Sales by Channel (Dine-in, Takeout, Delivery) | To monitor overall revenue health, identify sales trends, and understand which products and channels are driving the business. |
+| **Labor** | Labor Cost Percentage, Actual vs. Scheduled Hours/Dollars, Overtime Hours, Employee Turnover Rate, Labor Productivity (Sales / Total Labor Hours) | To control labor costs, optimize scheduling efficiency, and monitor staff retention and productivity. |
+| **Inventory & COGS** | Food Cost Percentage, Cost of Goods Sold (COGS), Inventory Turnover Rate, Stock Variance (Actual vs. Theoretical), Waste Percentage | To manage food costs, minimize waste, track supplier pricing, and ensure inventory accuracy. |
+| **Customer Satisfaction** | Net Promoter Score (NPS), Average Customer Satisfaction Rating, Repeat Customer Rate, Customer Feedback Sentiment Analysis, Online Review Score Aggregation | To measure guest loyalty, understand customer sentiment, identify areas for service improvement, and manage online reputation. |
+| **Front-of-House** | Table Turnover Rate, Average Wait Time, Reservation No-Show Rate, Seating Efficiency (Actual Covers / Potential Covers) | To optimize seating capacity, improve guest flow, and enhance the efficiency of the front-of-house operations. |
+
+Export to Sheets
+
+### 10. Customer Relationship & Loyalty Engine
+
+In an increasingly competitive market, building direct relationships with guests and fostering loyalty is paramount. This module provides a comprehensive suite of tools to understand, engage, and retain customers, turning casual visitors into loyal regulars.
+
+### 10.1. Unified 360° Guest Profiles
+
+At the heart of the module is the unified `Customer` entity, which creates a complete, 360-degree view of every guest who interacts with the restaurant. This profile, accessible to authorized staff, consolidates data from all touchpoints :
+
+- **Transactional Data:** Complete order history from the POS, including items ordered, total spend, and visit frequency.
+- **Behavioral Data:** Reservation history, seating preferences, special requests, and any recorded notes from staff.
+- **Feedback Data:** All submitted ratings, reviews, and direct feedback, along with sentiment analysis.
+- **Loyalty Data:** Current points balance, reward redemption history, and loyalty tier status.
+
+This rich profile allows the restaurant to understand its customers on a deep, individual level, which is the foundation for effective personalization.
+
+### 10.2. Segmented & Automated Marketing
+
+The system uses the rich data from the guest profiles to enable highly targeted and effective marketing campaigns.
+
+- **Customer Segmentation:** Managers can easily create dynamic customer segments based on any combination of attributes. Examples include "High-Spenders" (top 10% by average check), "Loyal Regulars" (visited more than 5 times in 3 months), "Lapsed Customers" (haven't visited in 90 days), or "Wine Lovers" (frequently order bottles of wine).
+- **Targeted Promotions:** Instead of sending generic email blasts, the restaurant can send highly relevant offers to these specific segments. For example, a new premium steak could be marketed exclusively to the "High-Spenders" segment, while a "We Miss You" discount could be sent to "Lapsed Customers" to encourage their return.
+- **Marketing Automation:** The system can automate lifecycle marketing campaigns. For example, it can be configured to automatically send a "Happy Birthday" email with a special offer a week before a customer's birthday, or a follow-up email asking for feedback the day after a visit.
+
+### 10.3. Dynamic & Personalized Loyalty Programs
+
+Aura moves beyond simple "earn-and-burn" points programs to create more engaging and personalized loyalty experiences.
+
+- **Tiered Programs:** The system supports tiered loyalty programs (e.g., Silver, Gold, Platinum) where customers unlock greater benefits as their spending or visit frequency increases. This provides a clear incentive for continued patronage.
+- **Personalized Rewards:** Instead of a generic "100 points = $5 off" system, Aura can offer personalized rewards based on a customer's purchase history. A customer who frequently orders desserts might receive an offer for a free dessert, while a beer enthusiast might get a reward for a complimentary craft beer. This makes the rewards feel more relevant and valuable.
+- **Integrated Experience:** The loyalty program is seamlessly integrated into the POS. Customers can be looked up by name or phone number, and servers are prompted if a customer has an available reward, making the redemption process frictionless.
+
+By combining a deep understanding of customer behavior with powerful marketing and loyalty tools, this module enables restaurants to build a strong, direct relationship with their customer base, reducing reliance on third-party marketing and driving sustainable, long-term growth.
+
+---
+
+## Part IV: System Configuration & Future-Proofing
+
+The final part of the Aura blueprint focuses on the administrative and architectural elements that ensure the system is manageable, extensible, and capable of evolving with the restaurant and the industry.
+
+### 11. Settings, Integrations, & Scalability
+
+This module serves as the central control panel for the entire Aura system, providing administrators with the tools to configure settings, manage integrations, and scale the platform as the business grows.
+
+### 11.1. Granular System Settings & Access Control
+
+Aura provides a comprehensive settings panel where administrators can configure every aspect of the system.
+
+- **Role-Based Access Control (RBAC):** A critical security and operational feature. Administrators can create custom roles (e.g., Server, Host, Manager, Accountant, Owner) and define granular permissions for each role. This ensures that employees can only access the information and functions relevant to their job, protecting sensitive financial and customer data.
+- **Location Configuration:** For multi-unit operators, the system allows for both global and location-specific settings. An owner can push a universal menu price update to all locations, while a local manager can still adjust their specific floor plan or staff schedule.
+- **Customization:** The settings module allows for deep customization of the platform to match the restaurant's brand and workflow, including custom receipt templates, email branding, and configurable operational alerts.
+
+### 11.2. A Rich Ecosystem of Integrations
+
+A core design philosophy of Aura is to be an open, connected platform rather than a closed, walled garden. The ability to seamlessly integrate with other best-in-class software is crucial for modern restaurant operations.
+
+- **API-First Design:** The system is built with an "API-first" approach, meaning that all of its core functions are accessible via a well-documented, secure API. This allows for deep, custom integrations to be built by the restaurant's own developers or third-party partners.
+- **Pre-Built Connectors:** Aura will launch with a marketplace of pre-built, "plug-and-play" integrations for a wide range of essential business tools, including :
+    - **Accounting Software:** (e.g., QuickBooks, Xero) for automating the transfer of daily sales and expense data.
+    - **Payroll Providers:** (e.g., ADP, Gusto) for one-click payroll processing.
+    - **Delivery Aggregators:** (e.g., DoorDash, Uber Eats) for unified order management.
+    - **Property Management Systems (PMS):** For hotel restaurants, allowing for seamless bill-to-room functionality.
+    - **Marketing Platforms:** (e.g., Mailchimp, Klaviyo) for syncing customer segments.
+
+This extensive network of integrations allows a restaurant to create a cohesive technology ecosystem that shares data and automates workflows across the entire business, saving time and reducing manual errors.
+
+### 11.3. Architecture for Scalability & Future-Proofing
+
+The Aura system is architected from the ground up to support businesses of all sizes, from a single independent cafe to a global enterprise with hundreds of locations.
+
+- **Cloud-Native Foundation:** The entire platform is built on modern, cloud-native infrastructure. This provides inherent scalability, reliability, and accessibility. Managers can access their dashboards and data from any device with an internet connection, anywhere in the world.
+- **Modular Architecture:** As detailed in Part I, the modular design allows the system to scale efficiently. A restaurant group can manage all its locations from a single, centralized dashboard, with the ability to drill down into the performance of a specific region, city, or individual store.
+- **Continuous Development:** The software-as-a-service (SaaS) model ensures that the platform is continuously updated with new features, security patches, and performance improvements. This means the system will evolve over time, incorporating new technologies and adapting to changing industry trends without requiring the restaurant to purchase new software or hardware. This approach ensures that a restaurant investing in Aura will still have a cutting-edge and relevant system for years to come.
