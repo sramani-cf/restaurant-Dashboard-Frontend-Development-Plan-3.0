@@ -1,0 +1,23 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00D4FF"/>
+      <stop offset="50%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#10B981"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="32" height="32" rx="6" fill="url(#bg)"/>
+  
+  <!-- Inner glow -->
+  <rect x="2" y="2" width="28" height="28" rx="4" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.2)" stroke-width="0.5"/>
+  
+  <!-- Central A logo -->
+  <text x="16" y="22" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="bold" text-anchor="middle" fill="white" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">A</text>
+  
+  <!-- Accent dots -->
+  <circle cx="26" cy="6" r="2" fill="#10B981" opacity="0.8"/>
+  <circle cx="6" cy="26" r="1.5" fill="#00D4FF" opacity="0.8"/>
+  <rect x="25" y="25" width="2" height="2" rx="0.5" fill="#8B5CF6" opacity="0.6"/>
+</svg>
