@@ -269,7 +269,7 @@ export function ResponsiveSidebar({ isMobile = false, onClose = () => {} }) {
                       initial={{ opacity: 0, scale: 0.8, x: -10 }}
                       animate={{ opacity: 1, scale: 1, x: 0 }}
                       exit={{ opacity: 0, scale: 0.8, x: -10 }}
-                      className="sidebar-tooltip fixed left-80 p-3 rounded-lg glass-card border border-cyan-500/20 w-48"
+                      className="sidebar-tooltip fixed left-80 p-3 rounded-lg bg-slate-800 border border-cyan-500/30 w-48"
                       style={{
                         top: `${index * 65 + 140}px`
                       }}
@@ -370,28 +370,6 @@ export function ResponsiveSidebar({ isMobile = false, onClose = () => {} }) {
         </motion.div>
       </div>
 
-      {/* Particle Effects */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(4)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-1 h-1 bg-cyan-400 rounded-full opacity-20"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-            animate={{
-              y: [0, -10, 0],
-              opacity: [0.2, 0.6, 0.2],
-            }}
-            transition={{
-              duration: 2 + Math.random() * 2,
-              repeat: Infinity,
-              delay: Math.random() * 2,
-            }}
-          />
-        ))}
-      </div>
     </motion.div>
   )
 }
