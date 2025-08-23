@@ -46,7 +46,15 @@ export default function AnalyticsPage() {
     { name: 'Desserts', value: 10, sales: 2100 }
   ]
 
-  const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444']
+  // Neural 2030 Color Palette for futuristic charts
+  const NEURAL_COLORS = [
+    '#00D4FF', // Quantum Cyan
+    '#8B5CF6', // Neural Purple  
+    '#10B981', // Cyber Green
+    '#F59E0B', // Energy Orange
+    '#EF4444', // Alert Red
+    '#06B6D4'  // Electric Blue
+  ]
 
   // Calculate key metrics
   const totalRevenue = SALES_DATA.reduce((sum, day) => sum + day.sales, 0)
@@ -193,43 +201,120 @@ export default function AnalyticsPage() {
 
         {/* Second Row of Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Category Breakdown */}
+          {/* Enhanced Neural Category Breakdown */}
           <Card className="glass-card">
-            <CardHeader>
-              <CardTitle>Sales by Category</CardTitle>
-              <p className="text-sm text-muted-foreground">Revenue distribution across menu categories</p>
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/5 via-transparent to-purple-400/5 pointer-events-none" />
+            <CardHeader className="relative">
+              <CardTitle className="text-cyan-300 font-semibold flex items-center gap-2">
+                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
+                Neural Category Analysis
+              </CardTitle>
+              <p className="text-xs text-slate-400 font-mono">
+                Quantum revenue distribution • Neural processing active
+              </p>
             </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={categoryData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    dataKey="value"
-                    startAngle={90}
-                    endAngle={450}
-                  >
-                    {categoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'rgba(26, 26, 46, 0.9)', 
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      borderRadius: '8px'
-                    }}
-                    formatter={(value, name, props) => [
-                      `${value}% (${formatCurrency(props.payload.sales)})`, 
-                      props.payload.name
-                    ]}
-                  />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+            <CardContent className="relative pb-2">
+              {/* Chart Container */}
+              <div className="relative">
+                <ResponsiveContainer width="100%" height={240}>
+                  <PieChart>
+                    <defs>
+                      {categoryData.map((entry, index) => (
+                        <radialGradient 
+                          key={`gradient-${index}`} 
+                          id={`neuralGradient${index}`}
+                          cx="50%" 
+                          cy="50%" 
+                          r="50%"
+                        >
+                          <stop offset="0%" stopColor={NEURAL_COLORS[index]} stopOpacity={0.8} />
+                          <stop offset="70%" stopColor={NEURAL_COLORS[index]} stopOpacity={0.6} />
+                          <stop offset="100%" stopColor={NEURAL_COLORS[index]} stopOpacity={0.9} />
+                        </radialGradient>
+                      ))}
+                    </defs>
+                    <Pie
+                      data={categoryData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={55}
+                      outerRadius={95}
+                      paddingAngle={3}
+                      dataKey="value"
+                      startAngle={90}
+                      endAngle={450}
+                      animationBegin={0}
+                      animationDuration={1200}
+                      animationEasing="ease-out"
+                    >
+                      {categoryData.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={`url(#neuralGradient${index})`}
+                          stroke={NEURAL_COLORS[index]}
+                          strokeWidth={2}
+                          style={{
+                            filter: 'drop-shadow(0 0 8px rgba(0, 212, 255, 0.3))',
+                            transition: 'all 0.3s ease-in-out'
+                          }}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'rgba(15, 20, 25, 0.95)', 
+                        border: '1px solid rgba(0, 212, 255, 0.3)',
+                        borderRadius: '12px',
+                        padding: '12px',
+                        fontSize: '12px',
+                        fontFamily: 'monospace',
+                        backdropFilter: 'blur(8px)',
+                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+                      }}
+                      labelStyle={{ color: '#00D4FF', fontSize: '13px', fontWeight: 'bold' }}
+                      formatter={(value, name, props) => [
+                        `${value}% • ${formatCurrency(props.payload.sales)}`, 
+                        `${props.payload.name} Neural Sector`
+                      ]}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                
+                {/* Center Neural Core Display */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="text-center">
+                    <div className="text-md font-bold text-cyan-300 font-mono">
+                      {formatCurrency(categoryData.reduce((sum, cat) => sum + cat.sales, 0))}
+                    </div>
+                    <div className="text-xs text-slate-400 font-mono">
+                      NEURAL TOTAL
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Neural Legend - Bottom aligned */}
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {categoryData.map((category, index) => (
+                  <div key={category.name} className="flex items-center gap-2 p-2 rounded-lg bg-white/5">
+                    <div 
+                      className="w-3 h-3 rounded-full animate-pulse flex-shrink-0"
+                      style={{ 
+                        backgroundColor: NEURAL_COLORS[index],
+                        boxShadow: `0 0 8px ${NEURAL_COLORS[index]}40`
+                      }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs text-slate-300 font-medium truncate">
+                        {category.name}
+                      </div>
+                      <div className="text-xs text-slate-400 font-mono">
+                        [{category.value}%]
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
 
