@@ -12,13 +12,17 @@ import {
   Utensils,
   Flame,
   Users,
-  Timer
+  Timer,
+  Search,
+  X,
+  Filter
 } from 'lucide-react'
 
 export default function KitchenPage() {
   const [orders, setOrders] = useState(KDS_ORDERS)
   const [currentTime, setCurrentTime] = useState(new Date())
   const [selectedStation, setSelectedStation] = useState('all')
+  const [searchQuery, setSearchQuery] = useState('')
 
   // Update time every second
   useEffect(() => {
@@ -26,7 +30,13 @@ export default function KitchenPage() {
     return () => clearInterval(timer)
   }, [])
 
-  const stations = ['all', 'cold', 'hot', 'grill', 'dessert']
+  const stations = [
+    { id: 'all', name: 'All Stations', icon: Utensils },
+    { id: 'cold', name: 'Cold Station', icon: Users },
+    { id: 'hot', name: 'Hot Station', icon: Flame },
+    { id: 'grill', name: 'Grill Station', icon: Flame },
+    { id: 'dessert', name: 'Dessert Station', icon: Users }
+  ]
 
   const getOrderElapsedTime = (orderTime) => {
     const [hours, minutes] = orderTime.split(':').map(Number)
@@ -58,16 +68,27 @@ export default function KitchenPage() {
     ))
   }
 
-  const filteredOrders = selectedStation === 'all' 
-    ? orders 
-    : orders.filter(order => {
-        // Simple station filtering logic for demo
-        const items = order.items.join(' ').toLowerCase()
-        if (selectedStation === 'cold' && items.includes('salad')) return true
-        if (selectedStation === 'hot' && items.includes('pasta')) return true
-        if (selectedStation === 'grill' && items.includes('steak')) return true
-        return selectedStation === 'all'
-      })
+  const filteredOrders = orders
+    .filter(order => {
+      // Station filtering
+      if (selectedStation === 'all') return true
+      const items = order.items.join(' ').toLowerCase()
+      if (selectedStation === 'cold' && items.includes('salad')) return true
+      if (selectedStation === 'hot' && items.includes('pasta')) return true
+      if (selectedStation === 'grill' && items.includes('steak')) return true
+      return false
+    })
+    .filter(order => {
+      // Search filtering
+      if (!searchQuery) return true
+      const searchTerm = searchQuery.toLowerCase()
+      return (
+        order.id.toLowerCase().includes(searchTerm) ||
+        order.table.toString().includes(searchTerm) ||
+        order.items.some(item => item.toLowerCase().includes(searchTerm)) ||
+        order.status.toLowerCase().includes(searchTerm)
+      )
+    })
 
   return (
     <DashboardLayout>
@@ -147,20 +168,79 @@ export default function KitchenPage() {
           </Card>
         </div>
 
-        {/* Station Filters */}
-        <div className="flex gap-2 flex-wrap">
-          {stations.map((station) => (
-            <Button
-              key={station}
-              variant={selectedStation === station ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setSelectedStation(station)}
-              className="capitalize"
-            >
-              <Flame className="h-4 w-4 mr-2" />
-              {station === 'all' ? 'All Stations' : `${station} Station`}
-            </Button>
-          ))}
+        {/* Search and Filters */}
+        <div className="space-y-4">
+          {/* Search Input */}
+          <div className="relative max-w-md">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-slate-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search orders, items, tables..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-10 py-3 bg-white/5 border border-cyan-500/20 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-300/50 transition-all duration-300 font-medium"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Enhanced Station Filters */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-slate-300">
+              <Filter className="h-4 w-4" />
+              Station Filters:
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {stations.map((station) => {
+                const Icon = station.icon
+                return (
+                  <Button
+                    key={station.id}
+                    variant={selectedStation === station.id ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSelectedStation(station.id)}
+                    className=""
+                  >
+                    <Icon className="h-4 w-4 mr-2" />
+                    {station.name}
+                  </Button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Results Count */}
+          {(searchQuery || selectedStation !== 'all') && (
+            <div className="flex items-center justify-between text-sm text-slate-400">
+              <span>
+                {filteredOrders.length} order{filteredOrders.length !== 1 ? 's' : ''} found
+                {searchQuery && ` for "${searchQuery}"`}
+                {selectedStation !== 'all' && ` in ${stations.find(s => s.id === selectedStation)?.name}`}
+              </span>
+              {(searchQuery || selectedStation !== 'all') && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSearchQuery('')
+                    setSelectedStation('all')
+                  }}
+                  className="text-xs text-cyan-400 hover:text-cyan-300"
+                >
+                  <X className="h-3 w-3 mr-1" />
+                  Clear filters
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Order Tickets */}

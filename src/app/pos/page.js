@@ -14,19 +14,25 @@ import {
   DollarSign,
   Trash2,
   User,
-  Clock
+  Clock,
+  Search,
+  X
 } from 'lucide-react'
 
 export default function POSPage() {
   const [currentOrder, setCurrentOrder] = useState([])
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [currentTable, setCurrentTable] = useState(12)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const categories = ['All', 'Entrees', 'Appetizers', 'Beverages', 'Desserts']
 
-  const filteredItems = selectedCategory === 'All' 
-    ? MENU_ITEMS 
-    : MENU_ITEMS.filter(item => item.category === selectedCategory)
+  const filteredItems = MENU_ITEMS
+    .filter(item => selectedCategory === 'All' || item.category === selectedCategory)
+    .filter(item => 
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.category.toLowerCase().includes(searchQuery.toLowerCase())
+    )
 
   const addToOrder = (item) => {
     const existingItem = currentOrder.find(orderItem => orderItem.id === item.id)
@@ -109,31 +115,102 @@ export default function POSPage() {
               ))}
             </div>
 
+            {/* Search Input */}
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-4 w-4 text-slate-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search menu items..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-10 py-3 bg-white/5 border border-cyan-500/20 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-300/50 transition-all duration-300 font-medium"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-white transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Results Count */}
+            {(searchQuery || selectedCategory !== 'All') && (
+              <div className="flex items-center justify-between text-sm text-slate-400">
+                <span>
+                  {filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''} found
+                  {searchQuery && ` for "${searchQuery}"`}
+                  {selectedCategory !== 'All' && ` in ${selectedCategory}`}
+                </span>
+                {(searchQuery || selectedCategory !== 'All') && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSearchQuery('')
+                      setSelectedCategory('All')
+                    }}
+                    className="text-xs text-cyan-400 hover:text-cyan-300"
+                  >
+                    Clear filters
+                  </Button>
+                )}
+              </div>
+            )}
+
             {/* Menu Grid */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {filteredItems.map((item) => (
-                <Card 
-                  key={item.id} 
-                  className="glass-card cursor-pointer hover:border-primary/30 transition-colors"
-                  onClick={() => addToOrder(item)}
-                >
-                  <CardContent className="p-4">
-                    <div className="aspect-square bg-gradient-to-br from-slate-700 to-slate-800 rounded-lg mb-3 flex items-center justify-center">
-                      <span className="text-2xl">🍽️</span>
-                    </div>
-                    <h3 className="font-semibold text-sm mb-1">{item.name}</h3>
-                    <p className="text-muted-foreground text-xs mb-2">{item.category}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-lg font-bold text-primary">
-                        {formatCurrency(item.price)}
-                      </span>
-                      <Button size="sm" variant="secondary">
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              {filteredItems.length > 0 ? (
+                filteredItems.map((item) => (
+                  <Card 
+                    key={item.id} 
+                    className="glass-card cursor-pointer hover:border-primary/30 transition-colors"
+                    onClick={() => addToOrder(item)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="aspect-square bg-gradient-to-br from-slate-700 to-slate-800 rounded-lg mb-3 flex items-center justify-center">
+                        <span className="text-2xl">🍽️</span>
+                      </div>
+                      <h3 className="font-semibold text-sm mb-1">{item.name}</h3>
+                      <p className="text-muted-foreground text-xs mb-2">{item.category}</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-lg font-bold text-primary">
+                          {formatCurrency(item.price)}
+                        </span>
+                        <Button size="sm" variant="secondary">
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <div className="col-span-full text-center py-12">
+                  <Search className="h-16 w-16 mx-auto mb-4 text-slate-500" />
+                  <h3 className="text-lg font-medium text-slate-300 mb-2">No items found</h3>
+                  <p className="text-slate-400 mb-4">
+                    {searchQuery 
+                      ? `No menu items match "${searchQuery}"` 
+                      : `No items found in ${selectedCategory} category`
+                    }
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSearchQuery('')
+                      setSelectedCategory('All')
+                    }}
+                    className="text-cyan-400 border-cyan-400/30 hover:bg-cyan-400/10"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Clear filters
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
