@@ -172,7 +172,7 @@ export default function AnalyticsPage() {
             description="Daily revenue performance over the past week"
           />
 
-          {/* Hourly Performance */}
+          {/* Enhanced Hourly Performance */}
           <Card className="glass-card">
             <CardHeader>
               <CardTitle>Today's Hourly Performance</CardTitle>
@@ -181,6 +181,16 @@ export default function AnalyticsPage() {
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={hourlyData}>
+                  <defs>
+                    <linearGradient id="hourlyBarGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#6366f1" stopOpacity={0.8} />
+                      <stop offset="100%" stopColor="#4f46e5" stopOpacity={0.9} />
+                    </linearGradient>
+                    <linearGradient id="hourlyBarHoverGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.9} />
+                      <stop offset="100%" stopColor="#7c3aed" stopOpacity={1} />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
                   <XAxis dataKey="hour" stroke="#a1a1aa" fontSize={12} />
                   <YAxis stroke="#a1a1aa" fontSize={12} tickFormatter={(value) => `$${value}`} />
@@ -191,8 +201,35 @@ export default function AnalyticsPage() {
                       borderRadius: '8px'
                     }}
                     formatter={(value) => [`$${value}`, 'Sales']}
+                    cursor={{
+                      fill: 'rgba(139, 92, 246, 0.1)',
+                      stroke: 'rgba(139, 92, 246, 0.3)',
+                      strokeWidth: 1
+                    }}
                   />
-                  <Bar dataKey="sales" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                  <Bar 
+                    dataKey="sales" 
+                    fill="url(#hourlyBarGradient)"
+                    radius={[4, 4, 0, 0]}
+                    stroke="rgba(99, 102, 241, 0.3)"
+                    strokeWidth={1}
+                    style={{
+                      filter: 'drop-shadow(0 2px 4px rgba(99, 102, 241, 0.2))',
+                      transition: 'all 0.3s ease-in-out'
+                    }}
+                    onMouseEnter={(data, index, event) => {
+                      event.target.style.fill = 'url(#hourlyBarHoverGradient)';
+                      event.target.style.filter = 'drop-shadow(0 4px 8px rgba(139, 92, 246, 0.4))';
+                      event.target.style.stroke = 'rgba(139, 92, 246, 0.6)';
+                      event.target.style.strokeWidth = '2';
+                    }}
+                    onMouseLeave={(data, index, event) => {
+                      event.target.style.fill = 'url(#hourlyBarGradient)';
+                      event.target.style.filter = 'drop-shadow(0 2px 4px rgba(99, 102, 241, 0.2))';
+                      event.target.style.stroke = 'rgba(99, 102, 241, 0.3)';
+                      event.target.style.strokeWidth = '1';
+                    }}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -205,11 +242,10 @@ export default function AnalyticsPage() {
           <Card className="glass-card">
             <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/5 via-transparent to-purple-400/5 pointer-events-none" />
             <CardHeader className="relative">
-              <CardTitle className="text-cyan-300 font-semibold flex items-center gap-2">
-                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
+              <CardTitle>  
                 Neural Category Analysis
               </CardTitle>
-              <p className="text-xs text-slate-400 font-mono">
+              <p className="text-sm text-muted-foreground">
                 Quantum revenue distribution • Neural processing active
               </p>
             </CardHeader>
