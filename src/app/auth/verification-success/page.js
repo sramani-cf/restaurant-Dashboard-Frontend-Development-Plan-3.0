@@ -222,7 +222,7 @@ export default function VerificationSuccessPage() {
                   </Button>
                 </Link>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3 mt-4">
                   <Link href="/settings">
                     <Button
                       variant="outline"
