@@ -48,7 +48,11 @@ export function DashboardLayout({ children }) {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className="md:hidden fixed left-0 top-0 h-full w-80 z-50"
+              className="md:hidden fixed left-0 top-0 h-full w-80 z-50 mobile-sidebar"
+              style={{
+                background: 'linear-gradient(135deg, rgb(15, 20, 25) 0%, rgb(30, 35, 45) 50%, rgb(15, 20, 25) 100%)',
+                borderRight: '1px solid rgba(0, 212, 255, 0.3)'
+              }}
             >
               <ResponsiveSidebar isMobile={true} onClose={() => setIsMobileMenuOpen(false)} />
             </motion.aside>

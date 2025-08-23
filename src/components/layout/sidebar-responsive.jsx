@@ -154,12 +154,20 @@ export function ResponsiveSidebar({ isMobile = false, onClose = () => {} }) {
       initial="hidden"
       animate="visible"
       variants={containerVariants}
-      className="h-screen w-full glass-card-enhanced border-r border-cyan-500/20 flex flex-col"
+      className={cn(
+        "h-screen w-full border-r border-cyan-500/20 flex flex-col",
+        // Desktop: Glass effect with blur
+        !isMobile && "glass-card-enhanced",
+        // Mobile: Solid background with custom class
+        isMobile && "mobile-sidebar bg-slate-900"
+      )}
       style={{
-        background: `
-          radial-gradient(circle at 50% 0%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
-          rgba(15, 20, 25, 0.6)
-        `
+        background: isMobile 
+          ? `linear-gradient(135deg, rgb(15, 20, 25) 0%, rgb(30, 35, 45) 50%, rgb(15, 20, 25) 100%)`
+          : `
+              radial-gradient(circle at 50% 0%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+              rgba(15, 20, 25, 0.6)
+            `
       }}
     >
       <div className="flex h-screen flex-col relative overflow-hidden">
