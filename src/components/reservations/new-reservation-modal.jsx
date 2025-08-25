@@ -47,6 +47,16 @@ const NewReservationModal = ({ isOpen, onClose, onSuccess }) => {
     tablePreference: 'auto'
   })
 
+  // Focus first input when modal opens
+  useEffect(() => {
+    if (isOpen && currentStep === 0) {
+      const firstInput = document.querySelector('input[type="text"]')
+      if (firstInput) {
+        setTimeout(() => firstInput.focus(), 100)
+      }
+    }
+  }, [isOpen, currentStep])
+
   const steps = [
     {
       id: 'customer',
@@ -428,7 +438,7 @@ const NewReservationModal = ({ isOpen, onClose, onSuccess }) => {
               <Button
                 onClick={nextStep}
                 disabled={!canProceed()}
-                variant={canProceed() ? "neon" : "outline"}
+                variant={canProceed() ? "default" : "outline"}
                 className="flex items-center gap-2"
               >
                 Next

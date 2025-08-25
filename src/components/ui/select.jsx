@@ -42,19 +42,21 @@ const Select = React.forwardRef(({
   }
 
   const hasValue = selectedValue !== ''
+  const showFloatingLabel = isOpen || hasValue
 
   return (
     <div className="relative w-full" ref={selectRef}>
       {label && (
         <motion.label
           className={cn(
-            "absolute text-sm transition-all duration-200 pointer-events-none z-20",
-            isOpen || hasValue
-              ? "top-0 left-3 -translate-y-1/2 text-xs bg-slate-900 px-2 text-cyan-400"
-              : "top-1/2 left-4 -translate-y-1/2 text-slate-400"
+            "absolute text-sm transition-all duration-200 pointer-events-none z-20 bg-slate-900 rounded px-1",
+            showFloatingLabel
+              ? "top-0 left-3 -translate-y-1/2 text-xs text-cyan-400 opacity-100"
+              : "top-1/2 left-4 -translate-y-1/2 text-slate-400 bg-transparent opacity-0"
           )}
           animate={{
-            scale: isOpen || hasValue ? 0.9 : 1,
+            scale: showFloatingLabel ? 0.9 : 1,
+            opacity: showFloatingLabel ? 1 : 0,
           }}
           transition={{ duration: 0.2 }}
         >
@@ -69,7 +71,7 @@ const Select = React.forwardRef(({
           "flex h-12 w-full items-center justify-between rounded-xl border-2 border-white/10 bg-black/20 backdrop-blur-sm px-4 py-2 text-sm text-white transition-all duration-200 focus-visible:outline-none focus-visible:border-cyan-400/50 focus-visible:ring-2 focus-visible:ring-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50",
           error && "border-red-500/50 focus-visible:border-red-400/50 focus-visible:ring-red-400/20",
           isOpen && "border-cyan-400/50 ring-2 ring-cyan-400/20",
-          label && (isOpen || hasValue) && "pt-4",
+          showFloatingLabel && "pt-4 pb-2",
           className
         )}
         onClick={() => !disabled && setIsOpen(!isOpen)}
