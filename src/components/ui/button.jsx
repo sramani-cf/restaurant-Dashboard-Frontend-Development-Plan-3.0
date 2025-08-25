@@ -10,7 +10,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         // Neural Quantum Primary - Main CTA buttons
-        default: "bg-gradient-to-r from-cyan-500 to-blue-600 text-black  hover:from-cyan-400 hover:to-blue-500 border border-cyan-400/30 hover:border-cyan-300/50",
+        default: "bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:from-cyan-400 hover:to-blue-500 border border-cyan-400/30 hover:border-cyan-300/50",
         
         // Destructive Neural - Warning/Delete actions
         destructive: "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/40 hover:from-red-400 hover:to-red-500 border border-red-400/30 hover:border-red-300/50",

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { AddMenuItemModal } from '@/components/ui/add-menu-item-modal'
 import { MENU_ITEMS } from '@/constants/demo-data'
 import { formatCurrency, formatPercentage } from '@/lib/utils'
 import {
@@ -19,6 +20,11 @@ import {
 
 export default function MenuPage() {
   const [selectedView, setSelectedView] = useState('matrix') // 'matrix', 'list', 'categories'
+  const [menuItems, setMenuItems] = useState(MENU_ITEMS)
+
+  const handleAddMenuItem = (newItem) => {
+    setMenuItems(prev => [...prev, newItem])
+  }
 
   // Calculate menu engineering categories
   const getMenuCategory = (item) => {
@@ -68,10 +74,10 @@ export default function MenuPage() {
   }
 
   const categoryStats = {
-    star: MENU_ITEMS.filter(item => getMenuCategory(item) === 'star').length,
-    plow: MENU_ITEMS.filter(item => getMenuCategory(item) === 'plow').length,
-    puzzle: MENU_ITEMS.filter(item => getMenuCategory(item) === 'puzzle').length,
-    dog: MENU_ITEMS.filter(item => getMenuCategory(item) === 'dog').length,
+    star: menuItems.filter(item => getMenuCategory(item) === 'star').length,
+    plow: menuItems.filter(item => getMenuCategory(item) === 'plow').length,
+    puzzle: menuItems.filter(item => getMenuCategory(item) === 'puzzle').length,
+    dog: menuItems.filter(item => getMenuCategory(item) === 'dog').length,
   }
 
   return (
@@ -100,10 +106,12 @@ export default function MenuPage() {
               <Eye className="h-4 w-4 mr-2" />
               List View
             </Button>
-            <Button className="bg-primary hover:bg-primary/90">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Item
-            </Button>
+            <AddMenuItemModal onAddItem={handleAddMenuItem}>
+              <Button className="bg-primary hover:bg-primary/90">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Item
+              </Button>
+            </AddMenuItemModal>
           </div>
         </div>
 
@@ -162,7 +170,7 @@ export default function MenuPage() {
                 <div className="absolute top-1/2 left-0 right-0 h-px bg-white/10"></div>
 
                 {/* Menu Items */}
-                {MENU_ITEMS.map((item) => {
+                {menuItems.map((item) => {
                   const category = getMenuCategory(item)
                   const info = getCategoryInfo(category)
                   const profitMargin = ((item.price - item.cost) / item.price) * 100
@@ -199,7 +207,7 @@ export default function MenuPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {MENU_ITEMS.map((item) => {
+                {menuItems.map((item) => {
                   const category = getMenuCategory(item)
                   const info = getCategoryInfo(category)
                   const profitMargin = ((item.price - item.cost) / item.price) * 100

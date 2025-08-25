@@ -61,7 +61,7 @@ const Input = React.forwardRef(({ className, type, error, label, placeholder, ..
       
       {/* Neural glow effect */}
       <motion.div
-        className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-400/0 via-cyan-400/20 to-cyan-400/0 opacity-0 pointer-events-none"
+        className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-400/0 via-cyan-400/0 to-cyan-400/0 opacity-0 pointer-events-none"
         animate={{ opacity: focused ? 1 : 0 }}
         transition={{ duration: 0.2 }}
       />

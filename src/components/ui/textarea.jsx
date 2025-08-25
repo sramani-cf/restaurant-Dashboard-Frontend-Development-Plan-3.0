@@ -60,7 +60,7 @@ const Textarea = React.forwardRef(({ className, error, label, placeholder, ...pr
       
       {/* Neural glow effect */}
       <motion.div
-        className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-400/0 via-cyan-400/20 to-cyan-400/0 opacity-0 pointer-events-none"
+        className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-400/0 via-cyan-400/0 to-cyan-400/0 opacity-0 pointer-events-none"
         animate={{ opacity: focused ? 1 : 0 }}
         transition={{ duration: 0.2 }}
       />
@@ -76,7 +76,7 @@ const Textarea = React.forwardRef(({ className, error, label, placeholder, ...pr
       )}
       
       {/* Corner indicators */}
-      {focused && (
+      {/* {focused && (
         <>
           <motion.div
             className="absolute top-1 right-1 w-1 h-1 bg-cyan-400 rounded-full"
@@ -91,7 +91,7 @@ const Textarea = React.forwardRef(({ className, error, label, placeholder, ...pr
             transition={{ delay: 0.2 }}
           />
         </>
-      )}
+      )} */}
     </div>
   )
 })

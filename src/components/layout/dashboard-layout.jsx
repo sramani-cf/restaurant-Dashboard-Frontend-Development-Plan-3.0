@@ -10,7 +10,7 @@ export function DashboardLayout({ children }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   return (
-    <div className="dashboard-layout min-h-screen bg-gradient-to-br from-slate-900 via-teal-900 to-slate-900">
+    <div className="dashboard-layout min-h-screen bg-gradient-to-br from-slate-900 via-slate-900 to-slate-900">
       {/* Desktop Sidebar - Fixed width, always visible */}
       <aside className="hidden md:block fixed left-0 top-0 h-full w-80 z-40">
         <ResponsiveSidebar isMobile={false} />
