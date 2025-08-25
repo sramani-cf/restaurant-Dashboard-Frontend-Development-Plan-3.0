@@ -67,14 +67,14 @@ const NewReservationModal = ({ isOpen, onClose, onSuccess }) => {
     },
     {
       id: 'datetime',
-      title: 'Date & Time',
+      title: 'Date & Time fix',
       icon: Calendar,
       description: 'When would you like to dine?',
       color: 'text-purple-400'
     },
     {
       id: 'party',
-      title: 'Party Size',
+      title: 'Party Size Members',
       icon: Users,
       description: 'How many guests?',
       color: 'text-green-400'
@@ -376,10 +376,12 @@ const NewReservationModal = ({ isOpen, onClose, onSuccess }) => {
                   <div key={step.id} className="flex flex-col items-center relative z-10">
                     <motion.button
                       className={cn(
-                        "w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all duration-200 mb-2",
-                        index <= currentStep
-                          ? "border-cyan-400 bg-cyan-400/20 text-cyan-300"
-                          : "border-slate-600 bg-slate-800 text-slate-500"
+                        "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 mb-2",
+                        index < currentStep
+                          ? "bg-cyan-400 text-slate-900 border-2 border-cyan-400"
+                          : index === currentStep
+                          ? "border-2 border-cyan-400 bg-slate-800 text-cyan-300"
+                          : "border-2 border-slate-600 bg-slate-800 text-slate-500"
                       )}
                       onClick={() => goToStep(index)}
                       whileHover={{ scale: 1.05 }}
@@ -396,12 +398,14 @@ const NewReservationModal = ({ isOpen, onClose, onSuccess }) => {
                   </div>
                 ))}
                 
-                {/* Progress Line */}
+                {/* Progress Line - only shows completed progress */}
                 <div className="absolute top-5 left-5 right-5 h-0.5 bg-slate-600 -z-10">
                   <motion.div
-                    className="h-full bg-gradient-to-r from-cyan-400 to-purple-400"
+                    className="h-full bg-cyan-400"
                     initial={{ width: "0%" }}
-                    animate={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
+                    animate={{ 
+                      width: currentStep === 0 ? "0%" : `${(currentStep / (steps.length - 1)) * 100}%` 
+                    }}
                     transition={{ duration: 0.5 }}
                   />
                 </div>

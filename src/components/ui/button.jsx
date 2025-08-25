@@ -142,36 +142,7 @@ const Button = React.forwardRef(({
         {children}
       </span>
       
-      {/* Corner Accent Indicators */}
-      {!asChild && (variant === 'default' || variant === 'neon') && (
-        <>
-          <motion.div 
-            className="absolute top-1 right-1 w-1 h-1 bg-cyan-300 rounded-full opacity-60"
-            animate={{
-              scale: [1, 1.2, 1],
-              opacity: [0.6, 1, 0.6],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-          />
-          <motion.div 
-            className="absolute bottom-1 left-1 w-1 h-1 bg-purple-400 rounded-full opacity-60"
-            animate={{
-              scale: [1, 1.2, 1],
-              opacity: [0.6, 1, 0.6],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 1
-            }}
-          />
-        </>
-      )}
+      
     </Comp>
   )
 })
