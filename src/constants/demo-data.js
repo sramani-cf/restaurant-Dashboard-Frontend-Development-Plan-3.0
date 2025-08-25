@@ -169,3 +169,209 @@ export const TABLE_STATUSES = [
   { id: 5, number: 5, seats: 2, status: "cleaning", x: 150, y: 150 },
   { id: 6, number: 6, seats: 8, status: "available", x: 250, y: 150 }
 ]
+
+// Live Feed Data
+export const LIVE_KITCHEN_ORDERS = [
+  {
+    id: "ORD-101",
+    table: "12",
+    items: ["Wagyu Steak", "Caesar Salad", "Red Wine"],
+    orderTime: "15:32",
+    cookTime: "18:42",
+    estimatedTime: 25,
+    elapsed: 12,
+    status: "cooking",
+    priority: "high",
+    chef: "Sarah Johnson",
+    temperature: "medium-rare"
+  },
+  {
+    id: "ORD-102",
+    table: "8",
+    items: ["Lobster Thermidor", "Truffle Pasta", "White Wine"],
+    orderTime: "15:28",
+    cookTime: "18:38",
+    estimatedTime: 30,
+    elapsed: 16,
+    status: "plating",
+    priority: "normal",
+    chef: "Mike Chen",
+    notes: "Customer allergic to nuts"
+  },
+  {
+    id: "ORD-103",
+    table: "15",
+    items: ["Caesar Salad", "House Wine"],
+    orderTime: "15:35",
+    cookTime: null,
+    estimatedTime: 15,
+    elapsed: 5,
+    status: "pending",
+    priority: "normal",
+    chef: null,
+    notes: "Extra dressing on side"
+  }
+]
+
+export const LIVE_SERVICE_UPDATES = [
+  {
+    id: 1,
+    type: "table_seated",
+    table: "14",
+    timestamp: "18:45",
+    server: "Emma Davis",
+    guests: 4,
+    details: "Anderson party seated, menus provided"
+  },
+  {
+    id: 2,
+    type: "order_taken",
+    table: "22",
+    timestamp: "18:43",
+    server: "Tom Wilson",
+    guests: 2,
+    details: "Order taken, sent to kitchen"
+  },
+  {
+    id: 3,
+    type: "payment_processing",
+    table: "18",
+    timestamp: "18:41",
+    server: "Emma Davis",
+    guests: 6,
+    amount: 245.80,
+    details: "Processing credit card payment"
+  },
+  {
+    id: 4,
+    type: "table_cleaning",
+    table: "5",
+    timestamp: "18:39",
+    server: "Cleaning Staff",
+    details: "Table being prepared for next guests"
+  }
+]
+
+export const LIVE_FINANCIAL_STREAM = [
+  {
+    id: 1,
+    type: "sale",
+    amount: 89.50,
+    table: "12",
+    timestamp: "18:45",
+    paymentMethod: "Credit Card",
+    server: "Emma Davis"
+  },
+  {
+    id: 2,
+    type: "sale",
+    amount: 156.75,
+    table: "8",
+    timestamp: "18:42",
+    paymentMethod: "Cash",
+    server: "Tom Wilson"
+  },
+  {
+    id: 3,
+    type: "milestone",
+    amount: 5000.00,
+    timestamp: "18:40",
+    details: "Daily revenue milestone reached"
+  },
+  {
+    id: 4,
+    type: "refund",
+    amount: -25.00,
+    table: "15",
+    timestamp: "18:38",
+    reason: "Item not available",
+    server: "Emma Davis"
+  }
+]
+
+export const LIVE_ALERTS = [
+  {
+    id: 1,
+    type: "critical",
+    title: "Kitchen Equipment Alert",
+    message: "Grill #2 temperature running high - needs attention",
+    timestamp: "18:44",
+    acknowledged: false,
+    category: "equipment"
+  },
+  {
+    id: 2,
+    type: "warning",
+    title: "Long Wait Time",
+    message: "Table 12 has been waiting 45+ minutes for food",
+    timestamp: "18:43",
+    acknowledged: false,
+    category: "service"
+  },
+  {
+    id: 3,
+    type: "info",
+    title: "Inventory Alert",
+    message: "Wagyu beef stock running low (8 portions remaining)",
+    timestamp: "18:40",
+    acknowledged: true,
+    category: "inventory"
+  },
+  {
+    id: 4,
+    type: "critical",
+    title: "Staff Alert",
+    message: "Server called in sick - dining room understaffed",
+    timestamp: "18:35",
+    acknowledged: false,
+    category: "staff"
+  }
+]
+
+export const LIVE_METRICS = {
+  currentRevenue: 4567.89,
+  ordersToday: 87,
+  avgWaitTime: 22,
+  tableOccupancy: 72,
+  kitchenEfficiency: 94,
+  customerSatisfaction: 4.8,
+  staffPerformance: 89
+}
+
+export const CAMERA_FEEDS = [
+  {
+    id: "kitchen-main",
+    name: "Kitchen - Main Station",
+    status: "active",
+    location: "Kitchen",
+    description: "Main cooking station and grill area"
+  },
+  {
+    id: "kitchen-prep",
+    name: "Kitchen - Prep Area",
+    status: "active", 
+    location: "Kitchen",
+    description: "Food preparation and plating station"
+  },
+  {
+    id: "dining-overview",
+    name: "Dining Room - Overview",
+    status: "active",
+    location: "Dining Room",
+    description: "General dining area and customer tables"
+  },
+  {
+    id: "entrance-lobby",
+    name: "Entrance & Waiting Area",
+    status: "active",
+    location: "Entrance",
+    description: "Front entrance and customer waiting area"
+  },
+  {
+    id: "bar-area",
+    name: "Bar & Lounge",
+    status: "maintenance",
+    location: "Bar",
+    description: "Bar counter and lounge seating area"
+  }
+]

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { NewReservationModal } from '@/components/reservations/new-reservation-modal'
 import { TABLE_STATUSES, RESERVATION_DATA } from '@/constants/demo-data'
 import {
   Calendar,
@@ -18,6 +19,8 @@ import {
 export default function ReservationsPage() {
   const [selectedTable, setSelectedTable] = useState(null)
   const [viewMode, setViewMode] = useState('floor-plan') // 'floor-plan' or 'list'
+  const [showNewReservationModal, setShowNewReservationModal] = useState(false)
+  const [reservations, setReservations] = useState(RESERVATION_DATA)
 
   const getTableColor = (status) => {
     switch (status) {
@@ -36,6 +39,10 @@ export default function ReservationsPage() {
 
   const getStatusText = (status) => {
     return status.charAt(0).toUpperCase() + status.slice(1)
+  }
+
+  const handleNewReservation = (newReservation) => {
+    setReservations(prev => [...prev, newReservation])
   }
 
   return (
@@ -64,7 +71,10 @@ export default function ReservationsPage() {
               <Calendar className="h-4 w-4 mr-2" />
               List View
             </Button>
-            <Button className="bg-primary hover:bg-primary/90">
+            <Button 
+              className="bg-primary hover:bg-primary/90"
+              onClick={() => setShowNewReservationModal(true)}
+            >
               <Plus className="h-4 w-4 mr-2" />
               New Reservation
             </Button>
@@ -276,7 +286,7 @@ export default function ReservationsPage() {
               </CardHeader>
               <CardContent className="p-4 pt-0">
                 <div className="space-y-3">
-                  {RESERVATION_DATA.map((reservation) => (
+                  {reservations.map((reservation) => (
                     <div key={reservation.id} className="p-3 rounded-lg border border-white/10 bg-white/5">
                       <div className="flex items-start justify-between mb-2">
                         <div>
@@ -366,6 +376,13 @@ export default function ReservationsPage() {
           </div>
         </div>
       </div>
+
+      {/* New Reservation Modal */}
+      <NewReservationModal
+        isOpen={showNewReservationModal}
+        onClose={() => setShowNewReservationModal(false)}
+        onSuccess={handleNewReservation}
+      />
     </DashboardLayout>
   )
 }
