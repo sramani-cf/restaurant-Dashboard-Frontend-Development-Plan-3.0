@@ -76,23 +76,6 @@ const Input = React.forwardRef(({ className, type, error, label, placeholder, ..
         </motion.p>
       )}
       
-      {/* Corner indicators */}
-      {focused && (
-        <>
-          <motion.div
-            className="absolute top-1 right-1 w-1 h-1 bg-cyan-400 rounded-full"
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 0.8 }}
-            transition={{ delay: 0.1 }}
-          />
-          <motion.div
-            className="absolute bottom-1 left-1 w-1 h-1 bg-purple-400 rounded-full"
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 0.8 }}
-            transition={{ delay: 0.2 }}
-          />
-        </>
-      )}
     </div>
   )
 })

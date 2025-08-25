@@ -448,13 +448,6 @@ const NewReservationModal = ({ isOpen, onClose, onSuccess }) => {
           )}
         </Card>
 
-        {/* Neural connection lines */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-4 left-4 w-px h-8 bg-gradient-to-b from-cyan-400/50 to-transparent" />
-          <div className="absolute top-4 right-4 w-px h-8 bg-gradient-to-b from-purple-400/50 to-transparent" />
-          <div className="absolute bottom-4 left-4 w-8 h-px bg-gradient-to-r from-cyan-400/50 to-transparent" />
-          <div className="absolute bottom-4 right-4 w-8 h-px bg-gradient-to-r from-transparent to-purple-400/50" />
-        </div>
       </motion.div>
     </div>
   )
