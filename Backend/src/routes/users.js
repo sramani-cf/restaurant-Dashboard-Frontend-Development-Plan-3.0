@@ -6,37 +6,26 @@ const router = express.Router();
 // All user routes require authentication
 router.use(authenticate);
 
-/**
- * @swagger
- * /users:
- *   get:
- *     summary: Get all users (Admin only)
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- */
+// Get all users (Admin only)
 router.get('/', authorize('SUPER_ADMIN', 'RESTAURANT_ADMIN'), (req, res) => {
-  res.json({ message: 'Get all users - Coming soon' });
+  res.json({
+    message: 'User management endpoint',
+    data: {
+      users: [],
+      totalUsers: 0,
+      activeUsers: 0
+    },
+    note: 'User management will be implemented in a future release'
+  });
 });
 
-/**
- * @swagger
- * /users/{id}:
- *   get:
- *     summary: Get user by ID
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- */
+// Get user by ID
 router.get('/:id', (req, res) => {
-  res.json({ message: 'Get user by ID - Coming soon' });
+  res.json({
+    message: 'Get user details endpoint',
+    userId: req.params.id,
+    note: 'User management will be implemented in a future release'
+  });
 });
 
 module.exports = router;

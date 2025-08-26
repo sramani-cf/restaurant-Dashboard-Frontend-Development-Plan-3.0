@@ -76,16 +76,20 @@ model Restaurant {
   updatedAt     DateTime @updatedAt
   
   // Relationships
-  staff         RestaurantStaff[]
-  tables        Table[]
-  menuItems     MenuItem[]
-  categories    Category[]
-  reservations  Reservation[]
-  orders        Order[]
-  inventory     InventoryItem[]
-  suppliers     Supplier[]
-  purchaseOrders PurchaseOrder[]
-  analytics     RestaurantAnalytics[]
+  staff           RestaurantStaff[]
+  tables          Table[]
+  menuItems       MenuItem[]
+  categories      Category[]
+  reservations    Reservation[]
+  orders          Order[]
+  inventory       InventoryItem[]
+  suppliers       Supplier[]
+  purchaseOrders  PurchaseOrder[]
+  analytics       RestaurantAnalytics[]
+  waitlistEntries WaitlistEntry[]
+  settings        RestaurantSettings?
+  operatingHours  OperatingHours[]
+  blackoutDates   BlackoutDate[]
   
   @@map("restaurants")
 }
@@ -118,7 +122,9 @@ model Table {
   restaurantId String
   number       Int
   name         String?
-  seats        Int
+  capacity     Int           // Alias for seats - main capacity field
+  seats        Int           // Keep for compatibility
+  location     String?       // Description of table location
   section      String?
   shape        TableShape    @default(SQUARE)
   status       TableStatus   @default(AVAILABLE)
@@ -130,9 +136,10 @@ model Table {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   
-  restaurant   Restaurant    @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  reservations Reservation[]
-  orders       Order[]
+  restaurant     Restaurant      @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  reservations   Reservation[]
+  orders         Order[]
+  waitlistEntries WaitlistEntry[]
   
   @@unique([restaurantId, number])
   @@map("tables")
@@ -160,10 +167,11 @@ model Customer {
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
   
-  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
-  reservations Reservation[]
-  orders       Order[]
-  loyaltyPoints LoyaltyPoint[]
+  user            User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  reservations    Reservation[]
+  orders          Order[]
+  loyaltyPoints   LoyaltyPoint[]
+  waitlistEntries WaitlistEntry[]
   
   @@map("customers")
 }
@@ -213,6 +221,94 @@ model Reservation {
   createdBy  User?      @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
   
   @@map("reservations")
+}
+
+// Waitlist Management
+model WaitlistEntry {
+  id              String            @id @default(uuid())
+  restaurantId    String
+  customerId      String?
+  tableId         String?
+  partySize       Int
+  preferredTime   DateTime?
+  specialRequests String?
+  notes           String?
+  priority        Int               @default(5) // 1-10 scale
+  position        Int               @default(1)
+  estimatedWaitTime Int?            // in minutes
+  status          WaitlistStatus    @default(WAITING)
+  source          String?           // "website", "phone", "walk-in", etc.
+  createdByUserId String?
+  notifiedAt      DateTime?
+  seatedAt        DateTime?
+  reservationId   String?           // If promoted to reservation
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  customer   Customer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  table      Table?     @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  createdBy  User?      @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  
+  @@map("waitlist_entries")
+}
+
+// Restaurant Settings & Configuration
+model RestaurantSettings {
+  id                        String   @id @default(uuid())
+  restaurantId              String   @unique
+  maxAdvanceBookingDays     Int      @default(60)
+  minAdvanceBookingMinutes  Int      @default(30)
+  minPartySize              Int      @default(1)
+  maxPartySize              Int      @default(20)
+  minReservationDuration    Int      @default(30)  // minutes
+  maxReservationDuration    Int      @default(480) // minutes
+  defaultReservationDuration Int     @default(120) // minutes
+  tableBufferTime           Int      @default(15)  // minutes between reservations
+  allowWalkIns              Boolean  @default(true)
+  allowOnlineReservations   Boolean  @default(true)
+  requireCustomerDetails    Boolean  @default(true)
+  emailNotifications        Boolean  @default(true)
+  smsNotifications          Boolean  @default(false)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  
+  @@map("restaurant_settings")
+}
+
+model OperatingHours {
+  id           String   @id @default(uuid())
+  restaurantId String
+  dayOfWeek    Int      // 0 = Sunday, 1 = Monday, etc.
+  isOpen       Boolean  @default(true)
+  openTime     Int      // Minutes from midnight (e.g., 11:00 AM = 660)
+  closeTime    Int      // Minutes from midnight (e.g., 10:00 PM = 1320)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  
+  @@unique([restaurantId, dayOfWeek])
+  @@map("operating_hours")
+}
+
+model BlackoutDate {
+  id           String   @id @default(uuid())
+  restaurantId String
+  date         DateTime? // For single date blackouts
+  startDate    DateTime? // For date range blackouts
+  endDate      DateTime? // For date range blackouts
+  reason       String?
+  description  String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  
+  @@map("blackout_dates")
 }
 
 // Menu Management
@@ -675,4 +771,12 @@ enum LogLevel {
   WARN
   ERROR
   FATAL
+}
+
+enum WaitlistStatus {
+  WAITING
+  NOTIFIED
+  SEATED
+  CANCELLED
+  NO_SHOW
 }

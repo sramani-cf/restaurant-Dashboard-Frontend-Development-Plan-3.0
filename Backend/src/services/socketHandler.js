@@ -362,6 +362,51 @@ class SocketHandler {
   }
 
   /**
+   * Emit reservation events to restaurant
+   */
+  emitReservationEvent(restaurantId, event, data) {
+    if (this.io) {
+      this.io.to(`restaurant:${restaurantId}`).emit(event, {
+        ...data,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
+
+  /**
+   * Emit table events to restaurant
+   */
+  emitTableEvent(restaurantId, tableId, event, data) {
+    if (this.io) {
+      // Emit to restaurant room
+      this.io.to(`restaurant:${restaurantId}`).emit(event, {
+        ...data,
+        tableId,
+        timestamp: new Date().toISOString(),
+      });
+      
+      // Emit to table-specific room if it exists
+      this.io.to(`table:${tableId}`).emit(event, {
+        ...data,
+        tableId,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
+
+  /**
+   * Emit waitlist events to restaurant
+   */
+  emitWaitlistEvent(restaurantId, event, data) {
+    if (this.io) {
+      this.io.to(`restaurant:${restaurantId}`).emit(event, {
+        ...data,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
+
+  /**
    * Broadcast live feed data to restaurant
    */
   broadcastLiveFeedData(restaurantId, feedType, data) {

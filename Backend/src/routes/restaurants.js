@@ -1,48 +1,39 @@
 const express = require('express');
 const { authenticate, authorize } = require('../middleware/auth');
+const { validate } = require('../middleware/validation');
+const restaurantController = require('../controllers/restaurantController');
+const {
+  createRestaurantSchema,
+  updateRestaurantSchema,
+  restaurantIdSchema
+} = require('../schemas/restaurantSchemas');
 
 const router = express.Router();
 
 // All restaurant routes require authentication
 router.use(authenticate);
 
-/**
- * @swagger
- * /restaurants:
- *   get:
- *     summary: Get all restaurants
- *     tags: [Restaurants]
- *     security:
- *       - bearerAuth: []
- */
-router.get('/', (req, res) => {
-  res.json({ message: 'Get all restaurants - Coming soon' });
-});
+// Get all restaurants user has access to
+router.get('/', restaurantController.getRestaurants);
 
-/**
- * @swagger
- * /restaurants:
- *   post:
- *     summary: Create a new restaurant
- *     tags: [Restaurants]
- *     security:
- *       - bearerAuth: []
- */
-router.post('/', authorize('SUPER_ADMIN', 'RESTAURANT_ADMIN'), (req, res) => {
-  res.json({ message: 'Create restaurant - Coming soon' });
-});
+// Create a new restaurant (admin only)
+router.post('/', 
+  authorize('SUPER_ADMIN', 'RESTAURANT_ADMIN'),
+  validate(createRestaurantSchema, 'body'),
+  restaurantController.createRestaurant
+);
 
-/**
- * @swagger
- * /restaurants/{id}:
- *   get:
- *     summary: Get restaurant by ID
- *     tags: [Restaurants]
- *     security:
- *       - bearerAuth: []
- */
-router.get('/:id', (req, res) => {
-  res.json({ message: 'Get restaurant by ID - Coming soon' });
-});
+// Get specific restaurant
+router.get('/:id', 
+  validate(restaurantIdSchema, 'params'),
+  restaurantController.getRestaurant
+);
+
+// Update restaurant (owner only)
+router.patch('/:id', 
+  validate(restaurantIdSchema, 'params'),
+  validate(updateRestaurantSchema, 'body'),
+  restaurantController.updateRestaurant
+);
 
 module.exports = router;
