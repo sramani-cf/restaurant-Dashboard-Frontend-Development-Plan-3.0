@@ -1,7 +1,7 @@
 // API Service Layer for Restaurant Management System
 class ApiService {
   constructor() {
-    this.baseURL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'
+    this.baseURL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
     this.apiVersion = process.env.NEXT_PUBLIC_API_VERSION || 'v1'
     this.timeout = parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT) || 30000
   }

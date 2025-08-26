@@ -411,7 +411,6 @@ async function main() {
         paymentTerms: 'Net 15',
       },
     ];
-
     const createdSuppliers = {};
     for (const supplier of suppliers) {
       const sup = await prisma.supplier.upsert({
