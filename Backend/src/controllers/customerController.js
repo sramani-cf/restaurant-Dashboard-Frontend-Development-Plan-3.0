@@ -20,7 +20,8 @@ class CustomerController {
         },
         ...(query.search && {
           OR: [
-            { name: { contains: query.search, mode: 'insensitive' } },
+            { firstName: { contains: query.search, mode: 'insensitive' } },
+            { lastName: { contains: query.search, mode: 'insensitive' } },
             { email: { contains: query.search, mode: 'insensitive' } },
             { phone: { contains: query.search } }
           ]
@@ -61,7 +62,7 @@ class CustomerController {
       // Transform response to include customer statistics
       const customersWithStats = customers.map(customer => ({
         id: customer.id,
-        name: customer.name,
+        name: `${customer.firstName} ${customer.lastName}`.trim(),
         email: customer.email,
         phone: customer.phone,
         createdAt: customer.createdAt,
@@ -126,7 +127,7 @@ class CustomerController {
         message: 'Customer retrieved successfully',
         customer: {
           id: customer.id,
-          name: customer.name,
+          name: `${customer.firstName} ${customer.lastName}`.trim(),
           email: customer.email,
           phone: customer.phone,
           createdAt: customer.createdAt,
@@ -145,6 +146,11 @@ class CustomerController {
     try {
       const { restaurantId } = req.params;
       const { name, email, phone, notes } = req.body;
+      
+      // Split name into firstName and lastName
+      const nameParts = name.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
       
       const prisma = database.getClient();
 
@@ -165,7 +171,8 @@ class CustomerController {
       const customer = await prisma.customer.create({
         data: {
           id: uuidv4(),
-          name,
+          firstName,
+          lastName,
           email: email || null,
           phone,
           notes: notes || null
@@ -175,14 +182,14 @@ class CustomerController {
       logger.info('Customer created successfully:', {
         customerId: customer.id,
         restaurantId,
-        name: customer.name
+        name: `${customer.firstName} ${customer.lastName}`.trim()
       });
 
       res.status(201).json({
         message: 'Customer created successfully',
         customer: {
           id: customer.id,
-          name: customer.name,
+          name: `${customer.firstName} ${customer.lastName}`.trim(),
           email: customer.email,
           phone: customer.phone,
           createdAt: customer.createdAt
@@ -198,6 +205,14 @@ class CustomerController {
     try {
       const { restaurantId, id } = req.params;
       const { name, email, phone, notes } = req.body;
+      
+      // Split name into firstName and lastName if provided
+      let firstName, lastName;
+      if (name) {
+        const nameParts = name.trim().split(' ');
+        firstName = nameParts[0] || '';
+        lastName = nameParts.slice(1).join(' ') || '';
+      }
       
       const prisma = database.getClient();
 
@@ -235,14 +250,16 @@ class CustomerController {
       const updatedCustomer = await prisma.customer.update({
         where: { id },
         data: {
-          name: name || undefined,
+          firstName: firstName || undefined,
+          lastName: lastName || undefined,
           email: email !== undefined ? email : undefined,
           phone: phone || undefined,
           notes: notes !== undefined ? notes : undefined
         },
         select: {
           id: true,
-          name: true,
+          firstName: true,
+          lastName: true,
           email: true,
           phone: true,
           notes: true,
@@ -257,7 +274,86 @@ class CustomerController {
 
       res.json({
         message: 'Customer updated successfully',
-        customer: updatedCustomer
+        customer: {
+          ...updatedCustomer,
+          name: `${updatedCustomer.firstName} ${updatedCustomer.lastName}`.trim()
+        }
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async searchCustomers(req, res, next) {
+    try {
+      const { restaurantId } = req.params;
+      const { q } = req.query;
+      
+      if (!q || q.trim().length === 0) {
+        return res.json({
+          message: 'Customer search results',
+          data: []
+        });
+      }
+
+      const prisma = database.getClient();
+      
+      // Build where clause for customer search
+      const where = {
+        reservations: {
+          some: {
+            restaurantId
+          }
+        },
+        OR: [
+          { firstName: { contains: q.trim(), mode: 'insensitive' } },
+          { lastName: { contains: q.trim(), mode: 'insensitive' } },
+          { email: { contains: q.trim(), mode: 'insensitive' } },
+          { phone: { contains: q.trim() } }
+        ]
+      };
+
+      // Get customers matching search query (limit to 10 for quick results)
+      const customers = await prisma.customer.findMany({
+        where,
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+          createdAt: true,
+          reservations: {
+            where: { restaurantId },
+            orderBy: { createdAt: 'desc' },
+            take: 1, // Just the latest reservation for context
+            select: {
+              id: true,
+              date: true,
+              time: true,
+              status: true
+            }
+          }
+        },
+        orderBy: { firstName: 'asc' },
+        take: 10
+      });
+
+      // Transform response
+      const searchResults = customers.map(customer => ({
+        id: customer.id,
+        name: `${customer.firstName} ${customer.lastName}`.trim(),
+        email: customer.email,
+        phone: customer.phone,
+        createdAt: customer.createdAt,
+        lastReservation: customer.reservations[0] || null
+      }));
+
+      res.json({
+        message: 'Customer search results',
+        data: searchResults,
+        query: q
       });
 
     } catch (error) {

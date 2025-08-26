@@ -28,6 +28,11 @@ router.post('/',
   customerController.createCustomer
 );
 
+// Search customers
+router.get('/search',
+  customerController.searchCustomers
+);
+
 // Get customer analytics
 router.get('/analytics', 
   validate(customerAnalyticsQuerySchema, 'query'),

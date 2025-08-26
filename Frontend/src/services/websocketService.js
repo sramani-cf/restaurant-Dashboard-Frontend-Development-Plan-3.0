@@ -10,10 +10,10 @@ class WebSocketService {
     this.listeners = new Map()
   }
 
-  connect(restaurantId, userId = null) {
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_IO_URL || 'http://localhost:5000'
+  connect(restaurantId, userId = null, token = null) {
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_IO_URL || 'http://localhost:8000'
     
-    this.socket = io(socketUrl, {
+    const socketOptions = {
       query: {
         restaurantId,
         userId,
@@ -21,7 +21,14 @@ class WebSocketService {
       transports: ['websocket', 'polling'],
       timeout: 20000,
       forceNew: true,
-    })
+    }
+
+    // Add authentication token if provided
+    if (token) {
+      socketOptions.auth = { token }
+    }
+    
+    this.socket = io(socketUrl, socketOptions)
 
     this.setupEventHandlers()
     return this.socket
@@ -54,106 +61,71 @@ class WebSocketService {
       this.attemptReconnect()
     })
 
-    // Reservation events
-    this.socket.on('reservation:created', (data) => {
-      this.emit('reservation_created', data)
+    // Backend events - match socketHandler.js emissions
+    this.socket.on('connected', (data) => {
+      this.emit('server_connected', data)
     })
 
-    this.socket.on('reservation:updated', (data) => {
+    this.socket.on('joined-restaurant', (data) => {
+      this.emit('joined_restaurant', data)
+    })
+
+    this.socket.on('left-restaurant', (data) => {
+      this.emit('left_restaurant', data)
+    })
+
+    // Reservation events from backend
+    this.socket.on('reservation-updated', (data) => {
       this.emit('reservation_updated', data)
     })
 
-    this.socket.on('reservation:cancelled', (data) => {
-      this.emit('reservation_cancelled', data)
-    })
-
-    this.socket.on('reservation:confirmed', (data) => {
-      this.emit('reservation_confirmed', data)
-    })
-
-    this.socket.on('reservation:arrived', (data) => {
-      this.emit('reservation_arrived', data)
-    })
-
-    this.socket.on('reservation:seated', (data) => {
-      this.emit('reservation_seated', data)
-    })
-
-    this.socket.on('reservation:completed', (data) => {
-      this.emit('reservation_completed', data)
-    })
-
-    this.socket.on('reservation:no_show', (data) => {
-      this.emit('reservation_no_show', data)
-    })
-
-    // Table events
-    this.socket.on('table:status_changed', (data) => {
+    // Table events from backend  
+    this.socket.on('table-status-changed', (data) => {
       this.emit('table_status_changed', data)
     })
 
-    this.socket.on('table:assigned', (data) => {
-      this.emit('table_assigned', data)
+    // Order events from backend
+    this.socket.on('order-status-changed', (data) => {
+      this.emit('order_status_changed', data)
     })
 
-    this.socket.on('table:cleaned', (data) => {
-      this.emit('table_cleaned', data)
+    this.socket.on('kitchen-display-updated', (data) => {
+      this.emit('kitchen_display_updated', data)
     })
 
-    this.socket.on('table:occupied', (data) => {
-      this.emit('table_occupied', data)
+    // Inventory events from backend
+    this.socket.on('inventory-alert', (data) => {
+      this.emit('inventory_alert', data)
     })
 
-    this.socket.on('table:available', (data) => {
-      this.emit('table_available', data)
+    // Live feed events from backend
+    this.socket.on('live-feed-subscribed', (data) => {
+      this.emit('live_feed_subscribed', data)
     })
 
-    // Waitlist events
-    this.socket.on('waitlist:added', (data) => {
-      this.emit('waitlist_added', data)
+    this.socket.on('live-feed-unsubscribed', (data) => {
+      this.emit('live_feed_unsubscribed', data)
     })
 
-    this.socket.on('waitlist:promoted', (data) => {
-      this.emit('waitlist_promoted', data)
+    this.socket.on('live-feed-data', (data) => {
+      this.emit('live_feed_data', data)
     })
 
-    this.socket.on('waitlist:removed', (data) => {
-      this.emit('waitlist_removed', data)
+    // Notification events from backend
+    this.socket.on('notification', (data) => {
+      this.emit('notification', data)
     })
 
-    this.socket.on('waitlist:updated', (data) => {
-      this.emit('waitlist_updated', data)
+    // Error events from backend
+    this.socket.on('error', (data) => {
+      this.emit('socket_error', data)
     })
 
-    // Alert events
-    this.socket.on('alert:conflict_detected', (data) => {
-      this.emit('conflict_detected', data)
+    // Ping/Pong for connection health
+    this.socket.on('pong', (data) => {
+      this.emit('pong_received', data)
     })
 
-    this.socket.on('alert:no_show', (data) => {
-      this.emit('no_show_alert', data)
-    })
-
-    this.socket.on('alert:long_wait', (data) => {
-      this.emit('long_wait_alert', data)
-    })
-
-    this.socket.on('alert:double_booking', (data) => {
-      this.emit('double_booking_alert', data)
-    })
-
-    this.socket.on('alert:vip_arrival', (data) => {
-      this.emit('vip_arrival_alert', data)
-    })
-
-    // System events
-    this.socket.on('system:maintenance', (data) => {
-      this.emit('system_maintenance', data)
-    })
-
-    this.socket.on('system:update', (data) => {
-      this.emit('system_update', data)
-    })
   }
 
   attemptReconnect() {
@@ -202,37 +174,43 @@ class WebSocketService {
   // Send events to server
   joinRestaurant(restaurantId) {
     if (this.socket && this.isConnected) {
-      this.socket.emit('join_restaurant', { restaurantId })
+      this.socket.emit('join-restaurant', { restaurantId })
     }
   }
 
   leaveRestaurant(restaurantId) {
     if (this.socket && this.isConnected) {
-      this.socket.emit('leave_restaurant', { restaurantId })
+      this.socket.emit('leave-restaurant', { restaurantId })
     }
   }
 
-  subscribeToTable(tableId) {
+  subscribeToLiveFeed(restaurantId, feedTypes = []) {
     if (this.socket && this.isConnected) {
-      this.socket.emit('subscribe_table', { tableId })
+      this.socket.emit('subscribe-live-feed', { restaurantId, feedTypes })
     }
   }
 
-  unsubscribeFromTable(tableId) {
+  unsubscribeFromLiveFeed(restaurantId, feedTypes = []) {
     if (this.socket && this.isConnected) {
-      this.socket.emit('unsubscribe_table', { tableId })
+      this.socket.emit('unsubscribe-live-feed', { restaurantId, feedTypes })
     }
   }
 
-  markTableStatus(tableId, status, notes = '') {
+  sendPing() {
     if (this.socket && this.isConnected) {
-      this.socket.emit('update_table_status', { tableId, status, notes })
+      this.socket.emit('ping')
     }
   }
 
-  notifyReservationUpdate(reservationId, update) {
+  markTableStatus(tableId, status, restaurantId, notes = '') {
     if (this.socket && this.isConnected) {
-      this.socket.emit('reservation_update', { reservationId, update })
+      this.socket.emit('table-status-update', { tableId, status, restaurantId, notes })
+    }
+  }
+
+  notifyReservationUpdate(reservationId, status, restaurantId, tableId) {
+    if (this.socket && this.isConnected) {
+      this.socket.emit('reservation-update', { reservationId, status, restaurantId, tableId })
     }
   }
 
