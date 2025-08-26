@@ -1,0 +1,678 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User Management & Authentication
+model User {
+  id                String              @id @default(uuid())
+  email             String              @unique
+  username          String?             @unique
+  password          String
+  firstName         String?
+  lastName          String?
+  phone             String?
+  avatar            String?
+  role              UserRole            @default(STAFF)
+  status            UserStatus          @default(ACTIVE)
+  isEmailVerified   Boolean             @default(false)
+  lastLoginAt       DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  // Relationships
+  refreshTokens     RefreshToken[]
+  restaurantStaff   RestaurantStaff[]
+  customerProfiles  Customer[]
+  reservations      Reservation[]
+  orders            Order[]
+  inventoryLogs     InventoryLog[]
+  systemLogs        SystemLog[]
+  notifications     Notification[]
+  
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("refresh_tokens")
+}
+
+// Restaurant & Location Management
+model Restaurant {
+  id            String   @id @default(uuid())
+  name          String
+  slug          String   @unique
+  description   String?
+  address       String
+  city          String
+  state         String
+  zipCode       String
+  country       String   @default("US")
+  phone         String?
+  email         String?
+  website       String?
+  logo          String?
+  timezone      String   @default("America/New_York")
+  currency      String   @default("USD")
+  capacity      Int      @default(50)
+  isActive      Boolean  @default(true)
+  settings      Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relationships
+  staff         RestaurantStaff[]
+  tables        Table[]
+  menuItems     MenuItem[]
+  categories    Category[]
+  reservations  Reservation[]
+  orders        Order[]
+  inventory     InventoryItem[]
+  suppliers     Supplier[]
+  purchaseOrders PurchaseOrder[]
+  analytics     RestaurantAnalytics[]
+  
+  @@map("restaurants")
+}
+
+model RestaurantStaff {
+  id           String        @id @default(uuid())
+  userId       String
+  restaurantId String
+  role         StaffRole
+  position     String?
+  department   String?
+  hourlyRate   Decimal?      @db.Decimal(10, 2)
+  isActive     Boolean       @default(true)
+  hiredAt      DateTime?
+  terminatedAt DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  shifts     Shift[]
+  
+  @@unique([userId, restaurantId])
+  @@map("restaurant_staff")
+}
+
+// Table & Floor Management
+model Table {
+  id           String        @id @default(uuid())
+  restaurantId String
+  number       Int
+  name         String?
+  seats        Int
+  section      String?
+  shape        TableShape    @default(SQUARE)
+  status       TableStatus   @default(AVAILABLE)
+  x            Int?          // X coordinate for floor plan
+  y            Int?          // Y coordinate for floor plan
+  width        Int?          // Width for floor plan
+  height       Int?          // Height for floor plan
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  
+  restaurant   Restaurant    @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  reservations Reservation[]
+  orders       Order[]
+  
+  @@unique([restaurantId, number])
+  @@map("tables")
+}
+
+// Customer Management
+model Customer {
+  id              String   @id @default(uuid())
+  userId          String?  @unique
+  email           String   @unique
+  phone           String?
+  firstName       String
+  lastName        String
+  dateOfBirth     DateTime?
+  anniversary     DateTime?
+  loyaltyTier     LoyaltyTier @default(BRONZE)
+  totalVisits     Int         @default(0)
+  totalSpent      Decimal     @default(0.00) @db.Decimal(10, 2)
+  averageCheck    Decimal?    @db.Decimal(10, 2)
+  lastVisitAt     DateTime?
+  notes           String?
+  preferences     Json?
+  dietaryRestrictions String[]
+  isActive        Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  reservations Reservation[]
+  orders       Order[]
+  loyaltyPoints LoyaltyPoint[]
+  
+  @@map("customers")
+}
+
+model LoyaltyPoint {
+  id         String           @id @default(uuid())
+  customerId String
+  points     Int
+  type       LoyaltyPointType
+  orderId    String?
+  description String?
+  expiresAt  DateTime?
+  createdAt  DateTime         @default(now())
+  
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  order    Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  
+  @@map("loyalty_points")
+}
+
+// Reservation Management
+model Reservation {
+  id              String            @id @default(uuid())
+  restaurantId    String
+  customerId      String?
+  tableId         String?
+  date            DateTime
+  time            DateTime
+  partySize       Int
+  duration        Int               @default(120) // minutes
+  status          ReservationStatus @default(PENDING)
+  source          String?           // "website", "phone", "walk-in", etc.
+  specialRequests String?
+  notes           String?
+  createdByUserId String?
+  confirmedAt     DateTime?
+  arrivedAt       DateTime?
+  seatedAt        DateTime?
+  completedAt     DateTime?
+  cancelledAt     DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  customer   Customer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  table      Table?     @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  createdBy  User?      @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  
+  @@map("reservations")
+}
+
+// Menu Management
+model Category {
+  id           String     @id @default(uuid())
+  restaurantId String
+  name         String
+  description  String?
+  image        String?
+  sortOrder    Int        @default(0)
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  menuItems  MenuItem[]
+  
+  @@unique([restaurantId, name])
+  @@map("categories")
+}
+
+model MenuItem {
+  id           String      @id @default(uuid())
+  restaurantId String
+  categoryId   String
+  name         String
+  description  String?
+  image        String?
+  price        Decimal     @db.Decimal(10, 2)
+  cost         Decimal?    @db.Decimal(10, 2)
+  calories     Int?
+  preparationTime Int?     // in minutes
+  popularity   Int         @default(0) // 0-100 scale
+  isActive     Boolean     @default(true)
+  isAvailable  Boolean     @default(true)
+  tags         String[]
+  allergens    String[]
+  dietaryInfo  String[]    // "vegetarian", "vegan", "gluten-free", etc.
+  variants     Json?       // size, temperature, etc.
+  sortOrder    Int         @default(0)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  
+  restaurant    Restaurant    @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  category      Category      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  orderItems    OrderItem[]
+  inventoryItems MenuItemInventory[]
+  
+  @@unique([restaurantId, name])
+  @@map("menu_items")
+}
+
+model MenuItemInventory {
+  id             String @id @default(uuid())
+  menuItemId     String
+  inventoryItemId String
+  quantity       Decimal @db.Decimal(10, 3) // Amount needed per menu item
+  unit           String
+  
+  menuItem      MenuItem      @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  
+  @@unique([menuItemId, inventoryItemId])
+  @@map("menu_item_inventory")
+}
+
+// Order Management
+model Order {
+  id            String      @id @default(uuid())
+  orderNumber   String      @unique
+  restaurantId  String
+  customerId    String?
+  tableId       String?
+  userId        String?     // Server who took the order
+  type          OrderType   @default(DINE_IN)
+  status        OrderStatus @default(PENDING)
+  subtotal      Decimal     @db.Decimal(10, 2)
+  tax           Decimal     @db.Decimal(10, 2)
+  tip           Decimal?    @db.Decimal(10, 2)
+  discount      Decimal?    @db.Decimal(10, 2)
+  total         Decimal     @db.Decimal(10, 2)
+  paymentMethod String?
+  paymentStatus PaymentStatus @default(PENDING)
+  notes         String?
+  specialInstructions String?
+  estimatedPrepTime Int?    // in minutes
+  prepStartedAt DateTime?
+  prepCompletedAt DateTime?
+  servedAt      DateTime?
+  completedAt   DateTime?
+  cancelledAt   DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  restaurant    Restaurant     @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  customer      Customer?      @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  table         Table?         @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  server        User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  orderItems    OrderItem[]
+  loyaltyPoints LoyaltyPoint[]
+  
+  @@map("orders")
+}
+
+model OrderItem {
+  id            String   @id @default(uuid())
+  orderId       String
+  menuItemId    String
+  quantity      Int
+  unitPrice     Decimal  @db.Decimal(10, 2)
+  totalPrice    Decimal  @db.Decimal(10, 2)
+  modifications String[] // "no onions", "extra cheese", etc.
+  specialNotes  String?
+  status        OrderItemStatus @default(PENDING)
+  prepStartedAt DateTime?
+  prepCompletedAt DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  
+  @@map("order_items")
+}
+
+// Inventory Management
+model Supplier {
+  id           String          @id @default(uuid())
+  restaurantId String
+  name         String
+  contactName  String?
+  email        String?
+  phone        String?
+  address      String?
+  city         String?
+  state        String?
+  zipCode      String?
+  country      String          @default("US")
+  paymentTerms String?
+  notes        String?
+  isActive     Boolean         @default(true)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  
+  restaurant      Restaurant       @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  inventoryItems  InventoryItem[]
+  purchaseOrders  PurchaseOrder[]
+  
+  @@unique([restaurantId, name])
+  @@map("suppliers")
+}
+
+model InventoryItem {
+  id            String     @id @default(uuid())
+  restaurantId  String
+  supplierId    String?
+  name          String
+  description   String?
+  category      String
+  unit          String     // "lbs", "oz", "pieces", etc.
+  currentStock  Decimal    @db.Decimal(10, 3)
+  minimumStock  Decimal    @db.Decimal(10, 3) // Reorder level
+  maximumStock  Decimal?   @db.Decimal(10, 3) // Par level
+  unitCost      Decimal    @db.Decimal(10, 2)
+  lastOrderDate DateTime?
+  expirationDate DateTime?
+  location      String?    // Storage location
+  barcode       String?
+  isActive      Boolean    @default(true)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  
+  restaurant       Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  supplier         Supplier?           @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  menuItems        MenuItemInventory[]
+  inventoryLogs    InventoryLog[]
+  purchaseOrderItems PurchaseOrderItem[]
+  
+  @@unique([restaurantId, name])
+  @@map("inventory_items")
+}
+
+model InventoryLog {
+  id              String            @id @default(uuid())
+  inventoryItemId String
+  userId          String
+  type            InventoryLogType
+  quantity        Decimal           @db.Decimal(10, 3)
+  previousStock   Decimal           @db.Decimal(10, 3)
+  newStock        Decimal           @db.Decimal(10, 3)
+  unitCost        Decimal?          @db.Decimal(10, 2)
+  reason          String?
+  notes           String?
+  createdAt       DateTime          @default(now())
+  
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("inventory_logs")
+}
+
+model PurchaseOrder {
+  id           String                @id @default(uuid())
+  restaurantId String
+  supplierId   String
+  orderNumber  String                @unique
+  status       PurchaseOrderStatus   @default(DRAFT)
+  subtotal     Decimal               @db.Decimal(10, 2)
+  tax          Decimal?              @db.Decimal(10, 2)
+  shipping     Decimal?              @db.Decimal(10, 2)
+  total        Decimal               @db.Decimal(10, 2)
+  notes        String?
+  expectedDate DateTime?
+  receivedDate DateTime?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  
+  restaurant Restaurant           @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  supplier   Supplier             @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  items      PurchaseOrderItem[]
+  
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id                String        @id @default(uuid())
+  purchaseOrderId   String
+  inventoryItemId   String
+  quantity          Decimal       @db.Decimal(10, 3)
+  unitCost          Decimal       @db.Decimal(10, 2)
+  totalCost         Decimal       @db.Decimal(10, 2)
+  receivedQuantity  Decimal?      @db.Decimal(10, 3)
+  
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  
+  @@map("purchase_order_items")
+}
+
+// Staff Scheduling
+model Shift {
+  id               String      @id @default(uuid())
+  restaurantStaffId String
+  date             DateTime
+  startTime        DateTime
+  endTime          DateTime?
+  breakDuration    Int?        // in minutes
+  status           ShiftStatus @default(SCHEDULED)
+  notes            String?
+  clockInTime      DateTime?
+  clockOutTime     DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  
+  staff RestaurantStaff @relation(fields: [restaurantStaffId], references: [id], onDelete: Cascade)
+  
+  @@map("shifts")
+}
+
+// Analytics & Reporting
+model RestaurantAnalytics {
+  id                  String   @id @default(uuid())
+  restaurantId        String
+  date                DateTime
+  totalRevenue        Decimal  @db.Decimal(10, 2)
+  totalOrders         Int
+  totalCustomers      Int
+  averageOrderValue   Decimal  @db.Decimal(10, 2)
+  tableOccupancyRate  Decimal  @db.Decimal(5, 2) // percentage
+  averageWaitTime     Int      // in minutes
+  customerSatisfaction Decimal? @db.Decimal(3, 2) // rating out of 5
+  createdAt           DateTime @default(now())
+  
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  
+  @@unique([restaurantId, date])
+  @@map("restaurant_analytics")
+}
+
+// Notifications & System Logs
+model Notification {
+  id        String            @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?
+  isRead    Boolean           @default(false)
+  createdAt DateTime          @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("notifications")
+}
+
+model SystemLog {
+  id        String      @id @default(uuid())
+  userId    String?
+  level     LogLevel
+  action    String
+  resource  String?
+  details   Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime    @default(now())
+  
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  @@map("system_logs")
+}
+
+// Enums
+enum UserRole {
+  SUPER_ADMIN
+  RESTAURANT_ADMIN
+  MANAGER
+  STAFF
+  CUSTOMER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  BANNED
+}
+
+enum StaffRole {
+  OWNER
+  GENERAL_MANAGER
+  ASSISTANT_MANAGER
+  SHIFT_SUPERVISOR
+  HEAD_CHEF
+  SOUS_CHEF
+  LINE_COOK
+  PREP_COOK
+  SERVER
+  BARTENDER
+  HOST
+  BUSSER
+  DISHWASHER
+  CLEANER
+}
+
+enum TableShape {
+  SQUARE
+  RECTANGLE
+  ROUND
+  OVAL
+}
+
+enum TableStatus {
+  AVAILABLE
+  OCCUPIED
+  RESERVED
+  OUT_OF_ORDER
+  CLEANING
+}
+
+enum LoyaltyTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+  DIAMOND
+}
+
+enum LoyaltyPointType {
+  EARNED
+  REDEEMED
+  EXPIRED
+  ADJUSTMENT
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  ARRIVED
+  SEATED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum OrderType {
+  DINE_IN
+  TAKEOUT
+  DELIVERY
+  CATERING
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  SERVED
+  COMPLETED
+  CANCELLED
+}
+
+enum OrderItemStatus {
+  PENDING
+  PREPARING
+  READY
+  SERVED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum InventoryLogType {
+  PURCHASE
+  USAGE
+  WASTE
+  ADJUSTMENT
+  TRANSFER
+  RETURN
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  ORDERED
+  PARTIALLY_RECEIVED
+  RECEIVED
+  CANCELLED
+}
+
+enum ShiftStatus {
+  SCHEDULED
+  STARTED
+  ON_BREAK
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum NotificationType {
+  INFO
+  WARNING
+  ERROR
+  SUCCESS
+  INVENTORY_LOW
+  ORDER_UPDATE
+  RESERVATION_UPDATE
+  SYSTEM_ALERT
+}
+
+enum LogLevel {
+  DEBUG
+  INFO
+  WARN
+  ERROR
+  FATAL
+}
