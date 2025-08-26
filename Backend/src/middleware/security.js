@@ -77,13 +77,18 @@ const generalRateLimit = rateLimit({
     // Skip rate limiting for health checks and static assets
     return req.path === '/health' || req.path.startsWith('/static');
   },
-  onLimitReached: (req, res, options) => {
+  handler: (req, res, next, options) => {
     logger.warn('Rate limit reached:', {
       ip: req.ip,
       path: req.path,
       method: req.method,
       userAgent: req.get('User-Agent'),
       userId: req.user?.id,
+    });
+    res.status(options.statusCode || 429).json({
+      error: 'Too many requests',
+      message: 'Rate limit exceeded. Please try again later.',
+      retryAfter: Math.ceil(config.rateLimit.windowMs / 1000),
     });
   },
 });
@@ -103,12 +108,17 @@ const authRateLimit = rateLimit({
     message: 'Too many login attempts. Please try again later.',
     retryAfter: 900, // 15 minutes
   },
-  onLimitReached: (req, res, options) => {
+  handler: (req, res, next, options) => {
     logger.warn('Authentication rate limit reached:', {
       ip: req.ip,
       path: req.path,
       email: req.body?.email,
       userAgent: req.get('User-Agent'),
+    });
+    res.status(options.statusCode || 429).json({
+      error: 'Too many authentication attempts',
+      message: 'Too many login attempts. Please try again later.',
+      retryAfter: 900,
     });
   },
 });
@@ -119,16 +129,9 @@ const authRateLimit = rateLimit({
 const speedLimit = slowDown({
   windowMs: 15 * 60 * 1000, // 15 minutes
   delayAfter: 50, // Allow 50 requests per window at full speed
-  delayMs: 500, // Add 500ms delay per request after threshold
+  delayMs: () => 500, // Add 500ms delay per request after threshold
   maxDelayMs: 10000, // Maximum delay of 10 seconds
   store: createRedisStore(),
-  onLimitReached: (req, res, options) => {
-    logger.warn('Speed limit threshold reached:', {
-      ip: req.ip,
-      path: req.path,
-      userAgent: req.get('User-Agent'),
-    });
-  },
 });
 
 /**
