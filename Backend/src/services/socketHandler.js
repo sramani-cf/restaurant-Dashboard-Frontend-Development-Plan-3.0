@@ -27,6 +27,11 @@ class SocketHandler {
         // Verify JWT token
         const decoded = jwtManager.verifyAccessToken(token);
         
+        // Validate userId from token
+        if (!decoded.userId || typeof decoded.userId !== 'string') {
+          return next(new Error('Invalid user ID in token'));
+        }
+        
         // Fetch user data
         const prisma = database.getClient();
         const user = await prisma.user.findUnique({

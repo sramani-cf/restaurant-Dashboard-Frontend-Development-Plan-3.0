@@ -75,7 +75,7 @@ export default function InventoryPage() {
               <ShoppingCart className="h-4 w-4 mr-2" />
               Orders
             </Button>
-            <Button className="bg-primary hover:bg-primary/90">
+            <Button className="bg-blue-800">
               <Plus className="h-4 w-4 mr-2" />
               Add Item
             </Button>

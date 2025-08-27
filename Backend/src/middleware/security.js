@@ -45,6 +45,12 @@ const corsOptions = {
  */
 const createRedisStore = () => {
   try {
+    // Check if Redis is connected before creating store
+    if (!redis.isConnected) {
+      logger.warn('Redis store not available for rate limiting, using memory store');
+      return undefined; // Will use default memory store
+    }
+    
     const RedisStore = require('rate-limit-redis');
     const client = redis.getClient();
     
@@ -53,7 +59,7 @@ const createRedisStore = () => {
       prefix: 'rate-limit:',
     });
   } catch (error) {
-    logger.warn('Redis store not available for rate limiting, using memory store:', error.message);
+    logger.warn('Redis store not available for rate limiting, using memory store:', error);
     return undefined; // Will use default memory store
   }
 };

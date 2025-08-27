@@ -406,7 +406,7 @@ export default function SettingsPage() {
               <RefreshCw className="h-4 w-4 mr-2" />
               Reset to Defaults
             </Button>
-            <Button className="bg-primary hover:bg-primary/90">
+            <Button className="bg-blue-800">
               <Save className="h-4 w-4 mr-2" />
               Save Changes
             </Button>

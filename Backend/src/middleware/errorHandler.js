@@ -264,7 +264,7 @@ const notFoundHandler = (req, res) => {
  * Handle uncaught exceptions
  */
 const handleUncaughtException = (error) => {
-  logger.fatal('Uncaught Exception:', {
+  logger.error('Uncaught Exception:', {
     message: error.message,
     stack: error.stack,
     timestamp: new Date().toISOString(),
@@ -277,7 +277,7 @@ const handleUncaughtException = (error) => {
  * Handle unhandled promise rejections
  */
 const handleUnhandledRejection = (reason, promise) => {
-  logger.fatal('Unhandled Promise Rejection:', {
+  logger.error('Unhandled Promise Rejection:', {
     reason: reason,
     promise: promise,
     timestamp: new Date().toISOString(),

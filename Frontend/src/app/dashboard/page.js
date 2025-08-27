@@ -39,7 +39,7 @@ export default function DashboardPage() {
             </p>
           </div>
           <Button 
-            className="bg-primary hover:bg-primary/90 w-full sm:w-auto whitespace-nowrap"
+            className="bg-blue-800 w-full sm:w-auto whitespace-nowrap"
             onClick={() => setIsLiveFeedOpen(true)}
           >
             <span className="hidden sm:inline">View Live Feed</span>

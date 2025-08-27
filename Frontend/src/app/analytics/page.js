@@ -82,7 +82,7 @@ export default function AnalyticsPage() {
               <Calendar className="h-4 w-4 mr-2" />
               Date Range
             </Button>
-            <Button className="bg-primary hover:bg-primary/90">
+            <Button className="bg-blue-800">
               <Download className="h-4 w-4 mr-2" />
               Export Report
             </Button>

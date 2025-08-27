@@ -340,7 +340,7 @@ export default function ReservationsPage() {
               List View
             </Button>
             <Button 
-              className="bg-primary hover:bg-primary/90"
+              className="bg-blue-800"
               onClick={() => setShowNewReservationModal(true)}
             >
               <Plus className="h-4 w-4 mr-2" />
