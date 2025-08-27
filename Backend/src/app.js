@@ -96,24 +96,30 @@ apiRouter.use('/auth', security.authRateLimit, authRoutes);
 apiRouter.use('/users', userRoutes);
 apiRouter.use('/restaurants', restaurantRoutes);
 
-// Global customer search route (for multi-restaurant searches)
-// Note: In development, we'll allow unauthenticated access for testing
-const customerSearchMiddleware = config.nodeEnv === 'development' ? 
-  (req, res, next) => {
-    // In development, try authentication first, but fallback to mock user if no auth
-    if (!req.headers.authorization) {
-      req.user = {
-        id: 'dev-user',
-        role: 'SUPER_ADMIN',
-        restaurantStaff: []
-      };
-      return next();
-    }
-    // If auth header exists, use normal authentication
-    authenticate(req, res, next);
-  } : authenticate;
+// Development middleware for bypassing authentication in dev mode
+const createDevAuthMiddleware = (mockRole = 'SUPER_ADMIN') => {
+  return config.nodeEnv === 'development' ? 
+    (req, res, next) => {
+      // In development, try authentication first, but fallback to mock user if no auth
+      if (!req.headers.authorization) {
+        req.user = {
+          id: 'dev-user',
+          role: mockRole,
+          restaurantStaff: mockRole === 'STAFF' ? [{ 
+            restaurantId: 'dev-restaurant', 
+            isActive: true,
+            role: 'MANAGER'
+          }] : []
+        };
+        return next();
+      }
+      // If auth header exists, use normal authentication
+      authenticate(req, res, next);
+    } : authenticate;
+};
 
-apiRouter.get('/customers/search', customerSearchMiddleware, customerController.globalSearchCustomers);
+// Global customer search route (for multi-restaurant searches)
+apiRouter.get('/customers/search', createDevAuthMiddleware(), customerController.globalSearchCustomers);
 
 apiRouter.use('/restaurants/:restaurantId/tables', tableRoutes);
 apiRouter.use('/restaurants/:restaurantId/menu', menuRoutes);

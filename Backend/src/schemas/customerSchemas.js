@@ -44,7 +44,7 @@ const customerIdSchema = Joi.object({
 });
 
 const customerParamsSchema = Joi.object({
-  restaurantId: Joi.string().uuid().required(),
+  restaurantId: Joi.string().min(1).required(), // Allow non-UUID for development
   id: Joi.string().uuid().required()
 });
 

@@ -27,6 +27,7 @@ const {
 } = require('../schemas/waitlistSchemas');
 
 const router = express.Router({ mergeParams: true });
+const config = require('../config');
 
 // Apply authentication and authorization middleware
 router.use(authenticate);
@@ -68,26 +69,7 @@ router.patch('/bulk',
   reservationController.bulkUpdateReservations
 );
 
-// Get specific reservation
-router.get('/:id', 
-  validate(reservationParamsSchema, 'params'),
-  reservationController.getReservation
-);
-
-// Update specific reservation
-router.patch('/:id', 
-  validate(reservationParamsSchema, 'params'),
-  validate(updateReservationSchema, 'body'),
-  reservationController.updateReservation
-);
-
-// Delete specific reservation
-router.delete('/:id', 
-  validate(reservationParamsSchema, 'params'),
-  reservationController.deleteReservation
-);
-
-// AVAILABILITY ROUTES
+// AVAILABILITY ROUTES (must come before /:id routes)
 
 // Check availability for a specific time slot
 router.get('/availability/check', 
@@ -123,6 +105,27 @@ router.get('/availability/optimal',
 // Get availability statistics
 router.get('/availability/stats', 
   availabilityController.getAvailabilityStats
+);
+
+// SPECIFIC RESERVATION ROUTES (must come after specific paths)
+
+// Get specific reservation
+router.get('/:id', 
+  validate(reservationParamsSchema, 'params'),
+  reservationController.getReservation
+);
+
+// Update specific reservation
+router.patch('/:id', 
+  validate(reservationParamsSchema, 'params'),
+  validate(updateReservationSchema, 'body'),
+  reservationController.updateReservation
+);
+
+// Delete specific reservation
+router.delete('/:id', 
+  validate(reservationParamsSchema, 'params'),
+  reservationController.deleteReservation
 );
 
 // WAITLIST ROUTES

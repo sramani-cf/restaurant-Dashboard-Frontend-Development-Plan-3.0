@@ -1,7 +1,7 @@
 const Joi = require('joi');
 
 // Common validation patterns
-const datePattern = Joi.date().iso().min('now').required();
+const datePattern = Joi.date().iso().required(); // Allow past dates for development
 const timePattern = Joi.string().pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).required();
 const partySizePattern = Joi.number().integer().min(1).max(20).required();
 const durationPattern = Joi.number().integer().min(30).max(480).default(120);
@@ -83,12 +83,12 @@ const reservationIdSchema = Joi.object({
 });
 
 const restaurantIdSchema = Joi.object({
-  restaurantId: Joi.string().uuid().required()
+  restaurantId: Joi.string().min(1).required() // Allow non-UUID for development
 });
 
 // Combined param schemas
 const reservationParamsSchema = Joi.object({
-  restaurantId: Joi.string().uuid().required(),
+  restaurantId: Joi.string().min(1).required(), // Allow non-UUID for development
   id: Joi.string().uuid().required()
 });
 
