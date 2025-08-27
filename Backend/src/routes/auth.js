@@ -1,7 +1,14 @@
 const express = require('express');
 const authController = require('../controllers/authController');
 const { authenticate, optionalAuthenticate } = require('../middleware/auth');
-const { validateSchema, schemas } = require('../middleware/validation');
+const { validateSchema } = require('../middleware/validation');
+const {
+  userRegister,
+  userLogin,
+  changePassword,
+  updateProfile,
+  refreshToken
+} = require('../schemas/authSchemas');
 
 const router = express.Router();
 
@@ -127,7 +134,7 @@ const router = express.Router();
  *         description: Internal server error
  */
 router.post('/register', 
-  validateSchema(schemas.userRegister),
+  validateSchema(userRegister),
   authController.register
 );
 
@@ -170,7 +177,7 @@ router.post('/register',
  *         description: Internal server error
  */
 router.post('/login', 
-  validateSchema(schemas.userLogin),
+  validateSchema(userLogin),
   authController.login
 );
 
@@ -327,7 +334,7 @@ router.post('/logout-all',
  */
 router.post('/change-password', 
   authenticate,
-  validateSchema(schemas.changePassword),
+  validateSchema(changePassword),
   authController.changePassword
 );
 
@@ -419,7 +426,7 @@ router.get('/profile',
  */
 router.put('/profile', 
   authenticate,
-  validateSchema(schemas.updateProfile),
+  validateSchema(updateProfile),
   authController.updateProfile
 );
 
