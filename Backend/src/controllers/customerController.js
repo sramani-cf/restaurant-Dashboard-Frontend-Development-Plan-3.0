@@ -480,6 +480,124 @@ class CustomerController {
       customerSince: reservations.length > 0 ? reservations[reservations.length - 1].createdAt : null
     };
   }
+
+  async globalSearchCustomers(req, res, next) {
+    try {
+      const { q } = req.query;
+      const user = req.user;
+      
+      if (!q || q.trim().length === 0) {
+        return res.json({
+          message: 'Customer search results',
+          data: []
+        });
+      }
+
+      const prisma = database.getClient();
+      
+      // Build where clause based on user's access
+      let restaurantFilter = {};
+      
+      if (user.role === 'SUPER_ADMIN') {
+        // Super admin can search all customers
+        restaurantFilter = {};
+      } else if (user.restaurantStaff && user.restaurantStaff.length > 0) {
+        // Staff can only search customers from their restaurants
+        const restaurantIds = user.restaurantStaff
+          .filter(staff => staff.isActive)
+          .map(staff => staff.restaurantId);
+        
+        restaurantFilter = {
+          reservations: {
+            some: {
+              restaurantId: { in: restaurantIds }
+            }
+          }
+        };
+      } else {
+        // No restaurant access
+        return res.json({
+          message: 'Customer search results',
+          data: []
+        });
+      }
+      
+      // Build search clause
+      const searchClause = {
+        OR: [
+          { firstName: { contains: q.trim(), mode: 'insensitive' } },
+          { lastName: { contains: q.trim(), mode: 'insensitive' } },
+          { email: { contains: q.trim(), mode: 'insensitive' } },
+          { phone: { contains: q.trim() } }
+        ]
+      };
+
+      // Combine restaurant filter and search clause
+      const where = Object.keys(restaurantFilter).length > 0 ? {
+        AND: [restaurantFilter, searchClause]
+      } : searchClause;
+
+      // Get customers matching search query (limit to 20 for quick results)
+      logger.debug('Customer search query:', { where, user: user.role });
+      
+      const customers = await prisma.customer.findMany({
+        where,
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+          createdAt: true,
+          reservations: {
+            orderBy: { createdAt: 'desc' },
+            take: 1, // Just the latest reservation for context
+            select: {
+              id: true,
+              date: true,
+              time: true,
+              partySize: true,
+              status: true,
+              restaurant: {
+                select: {
+                  id: true,
+                  name: true
+                }
+              }
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 20
+      });
+      
+      logger.debug('Customer search results:', { count: customers.length });
+
+      // Transform response for easier frontend consumption
+      const searchResults = customers.map(customer => ({
+        id: customer.id,
+        name: `${customer.firstName} ${customer.lastName}`.trim(),
+        email: customer.email,
+        phone: customer.phone,
+        createdAt: customer.createdAt,
+        lastReservation: customer.reservations[0] || null,
+        restaurant: customer.reservations[0]?.restaurant || null
+      }));
+
+      res.json({
+        message: 'Customer search completed successfully',
+        data: searchResults,
+        meta: {
+          query: q.trim(),
+          total: searchResults.length,
+          limit: 20
+        }
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = new CustomerController();

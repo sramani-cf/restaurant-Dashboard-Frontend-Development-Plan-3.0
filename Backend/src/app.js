@@ -12,6 +12,7 @@ const redis = require('./config/redis');
 const security = require('./middleware/security');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const { handleValidationErrors } = require('./middleware/validation');
+const { authenticate } = require('./middleware/auth');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -25,6 +26,9 @@ const customerRoutes = require('./routes/customers');
 const inventoryRoutes = require('./routes/inventory');
 const analyticsRoutes = require('./routes/analytics');
 const healthRoutes = require('./routes/health');
+
+// Import controllers for direct use
+const customerController = require('./controllers/customerController');
 
 // Create Express application
 const app = express();
@@ -91,6 +95,26 @@ apiRouter.use('/auth', security.authRateLimit, authRoutes);
 // Protected API routes
 apiRouter.use('/users', userRoutes);
 apiRouter.use('/restaurants', restaurantRoutes);
+
+// Global customer search route (for multi-restaurant searches)
+// Note: In development, we'll allow unauthenticated access for testing
+const customerSearchMiddleware = config.nodeEnv === 'development' ? 
+  (req, res, next) => {
+    // In development, try authentication first, but fallback to mock user if no auth
+    if (!req.headers.authorization) {
+      req.user = {
+        id: 'dev-user',
+        role: 'SUPER_ADMIN',
+        restaurantStaff: []
+      };
+      return next();
+    }
+    // If auth header exists, use normal authentication
+    authenticate(req, res, next);
+  } : authenticate;
+
+apiRouter.get('/customers/search', customerSearchMiddleware, customerController.globalSearchCustomers);
+
 apiRouter.use('/restaurants/:restaurantId/tables', tableRoutes);
 apiRouter.use('/restaurants/:restaurantId/menu', menuRoutes);
 apiRouter.use('/restaurants/:restaurantId/orders', orderRoutes);
