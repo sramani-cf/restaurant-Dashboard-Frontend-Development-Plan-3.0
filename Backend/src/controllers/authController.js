@@ -4,6 +4,7 @@ const redis = require('../config/redis');
 const jwtManager = require('../utils/jwt');
 const passwordManager = require('../utils/password');
 const { AuthenticationError, ValidationError, ConflictError } = require('../middleware/errorHandler');
+const { generateVerificationCode, sendVerificationCode } = require('../services/emailService');
 const { v4: uuidv4 } = require('uuid');
 
 class AuthController {
@@ -44,7 +45,11 @@ class AuthController {
       // Hash password
       const hashedPassword = await passwordManager.hashPassword(password);
       
-      // Create user
+      // Generate verification code
+      const verificationCode = generateVerificationCode();
+      const verificationExpiry = new Date(Date.now() + (parseInt(process.env.EMAIL_VERIFICATION_EXPIRY_MINUTES) || 10) * 60 * 1000);
+      
+      // Create user with verification fields
       const user = await prisma.user.create({
         data: {
           email,
@@ -55,6 +60,9 @@ class AuthController {
           username: username || null,
           role: 'STAFF', // Default role
           status: 'ACTIVE',
+          isEmailVerified: false,
+          emailVerificationCode: verificationCode,
+          emailVerificationExpiry: verificationExpiry,
         },
         select: {
           id: true,
@@ -65,38 +73,33 @@ class AuthController {
           phone: true,
           role: true,
           status: true,
+          isEmailVerified: true,
           createdAt: true,
         },
       });
       
-      // Generate tokens
-      const tokenPair = jwtManager.generateTokenPair({
-        userId: user.id,
+      // Send verification email
+      const emailResult = await sendVerificationCode(
+        user.email, 
+        `${user.firstName} ${user.lastName}`.trim() || user.email,
+        verificationCode
+      );
+      
+      if (!emailResult.success) {
+        logger.warn('Failed to send verification email:', emailResult.error);
+      }
+      
+      logger.info('User registered successfully:', { 
+        userId: user.id, 
         email: user.email,
-        role: user.role,
+        emailSent: emailResult.success 
       });
-      
-      // Store refresh token in database
-      await prisma.refreshToken.create({
-        data: {
-          token: tokenPair.refreshToken,
-          userId: user.id,
-          expiresAt: jwtManager.getTokenExpiration(tokenPair.refreshToken),
-        },
-      });
-      
-      // Update last login
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { lastLoginAt: new Date() },
-      });
-      
-      logger.info('User registered successfully:', { userId: user.id, email: user.email });
       
       res.status(201).json({
-        message: 'User registered successfully',
+        message: 'User registered successfully. Please check your email for verification code.',
         user,
-        tokens: tokenPair,
+        emailSent: emailResult.success,
+        requiresEmailVerification: true,
       });
       
     } catch (error) {
@@ -507,6 +510,183 @@ class AuthController {
       res.json({
         message: 'Profile updated successfully',
         user: updatedUser,
+      });
+      
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Verify email with OTP code
+   */
+  async verifyEmail(req, res, next) {
+    try {
+      const { email, verificationCode } = req.body;
+      
+      if (!email || !verificationCode) {
+        throw new ValidationError('Email and verification code are required');
+      }
+      
+      const prisma = database.getClient();
+      
+      // Find user by email
+      const user = await prisma.user.findUnique({
+        where: { email },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+          isEmailVerified: true,
+          emailVerificationCode: true,
+          emailVerificationExpiry: true,
+        },
+      });
+      
+      if (!user) {
+        throw new ValidationError('Invalid email address');
+      }
+      
+      if (user.isEmailVerified) {
+        throw new ValidationError('Email is already verified');
+      }
+      
+      if (!user.emailVerificationCode) {
+        throw new ValidationError('No verification code found. Please request a new one.');
+      }
+      
+      if (new Date() > user.emailVerificationExpiry) {
+        throw new ValidationError('Verification code has expired. Please request a new one.');
+      }
+      
+      if (user.emailVerificationCode !== verificationCode) {
+        throw new ValidationError('Invalid verification code');
+      }
+      
+      // Update user as verified
+      const updatedUser = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          isEmailVerified: true,
+          emailVerifiedAt: new Date(),
+          emailVerificationCode: null,
+          emailVerificationExpiry: null,
+        },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          firstName: true,
+          lastName: true,
+          phone: true,
+          role: true,
+          status: true,
+          isEmailVerified: true,
+          emailVerifiedAt: true,
+          createdAt: true,
+        },
+      });
+      
+      // Generate tokens for the verified user
+      const tokenPair = jwtManager.generateTokenPair({
+        userId: updatedUser.id,
+        email: updatedUser.email,
+        role: updatedUser.role,
+      });
+      
+      // Store refresh token in database
+      await prisma.refreshToken.create({
+        data: {
+          token: tokenPair.refreshToken,
+          userId: updatedUser.id,
+          expiresAt: jwtManager.getTokenExpiration(tokenPair.refreshToken),
+        },
+      });
+      
+      // Update last login
+      await prisma.user.update({
+        where: { id: updatedUser.id },
+        data: { lastLoginAt: new Date() },
+      });
+      
+      logger.info('Email verified successfully:', { userId: updatedUser.id, email: updatedUser.email });
+      
+      res.json({
+        message: 'Email verified successfully! Welcome to AURA 2030.',
+        user: updatedUser,
+        tokens: tokenPair,
+      });
+      
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Resend verification code
+   */
+  async resendVerificationCode(req, res, next) {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        throw new ValidationError('Email is required');
+      }
+      
+      const prisma = database.getClient();
+      
+      // Find user by email
+      const user = await prisma.user.findUnique({
+        where: { email },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          isEmailVerified: true,
+        },
+      });
+      
+      if (!user) {
+        throw new ValidationError('User not found');
+      }
+      
+      if (user.isEmailVerified) {
+        throw new ValidationError('Email is already verified');
+      }
+      
+      // Generate new verification code
+      const verificationCode = generateVerificationCode();
+      const verificationExpiry = new Date(Date.now() + (parseInt(process.env.EMAIL_VERIFICATION_EXPIRY_MINUTES) || 10) * 60 * 1000);
+      
+      // Update user with new verification code
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          emailVerificationCode: verificationCode,
+          emailVerificationExpiry: verificationExpiry,
+        },
+      });
+      
+      // Send verification email
+      const emailResult = await sendVerificationCode(
+        user.email, 
+        `${user.firstName} ${user.lastName}`.trim() || user.email,
+        verificationCode
+      );
+      
+      if (!emailResult.success) {
+        logger.warn('Failed to send verification email:', emailResult.error);
+        throw new Error('Failed to send verification email. Please try again.');
+      }
+      
+      logger.info('Verification code resent:', { userId: user.id, email: user.email });
+      
+      res.json({
+        message: 'Verification code sent successfully. Please check your email.',
+        emailSent: true,
       });
       
     } catch (error) {

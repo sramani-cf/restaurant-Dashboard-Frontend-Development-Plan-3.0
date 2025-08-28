@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
+import { apiService } from '@/services/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -22,6 +23,24 @@ export default function VerifyEmailPage() {
   const [timeLeft, setTimeLeft] = useState(60)
   const [canResend, setCanResend] = useState(false)
   const [emailSent, setEmailSent] = useState(true)
+  const [userEmail, setUserEmail] = useState('')
+  const [userName, setUserName] = useState('')
+  const [resendError, setResendError] = useState('')
+
+  // Load user data from session storage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const email = sessionStorage.getItem('verificationEmail')
+      const name = sessionStorage.getItem('userName')
+      if (email) {
+        setUserEmail(email)
+        setUserName(name || email)
+      } else {
+        // Redirect to signup if no email found
+        window.location.href = '/auth/signup'
+      }
+    }
+  }, [])
 
   // Timer countdown
   useEffect(() => {
@@ -34,14 +53,22 @@ export default function VerifyEmailPage() {
   }, [timeLeft, canResend])
 
   const handleResendEmail = async () => {
+    if (!userEmail) return
+    
     setIsResending(true)
-    // Simulate resend process
-    setTimeout(() => {
-      setIsResending(false)
+    setResendError('')
+    
+    try {
+      await apiService.resendVerificationCode(userEmail)
       setEmailSent(true)
       setTimeLeft(60)
       setCanResend(false)
-    }, 2000)
+    } catch (error) {
+      console.error('Resend error:', error)
+      setResendError(error.message || 'Failed to resend verification code')
+    } finally {
+      setIsResending(false)
+    }
   }
 
   const containerVariants = {
@@ -131,9 +158,9 @@ export default function VerifyEmailPage() {
               <div className="space-y-2">
                 <CardTitle className="text-2xl font-bold text-white">Check Your Email</CardTitle>
                 <p className="text-slate-400">
-                  We've sent a verification link to
+                  We've sent a verification code to
                 </p>
-                <p className="text-cyan-300 font-medium">john@example.com</p>
+                <p className="text-cyan-300 font-medium">{userEmail || 'your email'}</p>
               </div>
             </CardHeader>
 
@@ -161,6 +188,12 @@ export default function VerifyEmailPage() {
                   Didn't receive the email? Check your spam folder.
                 </div>
 
+                {resendError && (
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">
+                    <p className="text-red-400 text-sm">{resendError}</p>
+                  </div>
+                )}
+
                 {!canResend ? (
                   <div className="flex items-center justify-center gap-2 text-slate-400">
                     <Clock className="h-4 w-4" />
@@ -182,7 +215,7 @@ export default function VerifyEmailPage() {
                     ) : (
                       <RefreshCw className="mr-2 h-4 w-4" />
                     )}
-                    Resend verification email
+                    Resend verification code
                   </Button>
                 )}
               </motion.div>

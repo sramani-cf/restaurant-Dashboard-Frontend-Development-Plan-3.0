@@ -3,6 +3,7 @@ const handlebars = require('handlebars');
 const fs = require('fs').promises;
 const path = require('path');
 const logger = require('../config/logger');
+const crypto = require('crypto');
 
 class EmailService {
   constructor() {
@@ -16,28 +17,19 @@ class EmailService {
    */
   async initialize() {
     try {
-      // Configure email transporter based on environment
-      if (process.env.NODE_ENV === 'production') {
-        // Production configuration (e.g., SendGrid, AWS SES, etc.)
-        this.transporter = nodemailer.createTransporter({
-          service: process.env.EMAIL_SERVICE || 'sendgrid',
-          auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASSWORD
-          }
-        });
-      } else {
-        // Development configuration (e.g., Ethereal Email for testing)
-        this.transporter = nodemailer.createTransporter({
-          host: process.env.EMAIL_HOST || 'smtp.ethereal.email',
-          port: process.env.EMAIL_PORT || 587,
-          secure: false,
-          auth: {
-            user: process.env.EMAIL_USER || 'ethereal.user@ethereal.email',
-            pass: process.env.EMAIL_PASSWORD || 'ethereal.pass'
-          }
-        });
-      }
+      // Configure email transporter for Mailslurp testing
+      this.transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT) || 587,
+        secure: false, // Mailslurp port 2525 doesn't use SSL
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASSWORD
+        },
+        tls: {
+          rejectUnauthorized: false
+        }
+      });
 
       // Verify connection
       await this.transporter.verify();
@@ -63,7 +55,8 @@ class EmailService {
         'reservation-confirmation.hbs',
         'reservation-reminder.hbs',
         'reservation-cancelled.hbs',
-        'waitlist-promotion.hbs'
+        'waitlist-promotion.hbs',
+        'email-verification.hbs'
       ];
 
       for (const file of templateFiles) {
@@ -150,6 +143,62 @@ class EmailService {
       </div>
     `);
     this.templates.set('reservation-reminder', reminderTemplate);
+
+    // Email verification template
+    const verificationTemplate = handlebars.compile(`
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #000000; color: #ffffff; border-radius: 12px; overflow: hidden;">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%); padding: 30px 20px; text-align: center;">
+          <div style="width: 60px; height: 60px; background: rgba(255,255,255,0.2); border-radius: 16px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+            <span style="font-size: 24px;">⚡</span>
+          </div>
+          <h1 style="margin: 0; font-size: 28px; font-weight: bold; background: linear-gradient(45deg, #ffffff, #e5e7eb); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">AURA 2030</h1>
+          <p style="margin: 8px 0 0; font-size: 14px; opacity: 0.9;">Neural Restaurant OS</p>
+        </div>
+        
+        <!-- Content -->
+        <div style="padding: 40px 30px;">
+          <h2 style="color: #ffffff; font-size: 24px; font-weight: bold; margin: 0 0 16px; text-align: center;">Verify Your Email</h2>
+          <p style="color: #94a3b8; font-size: 16px; line-height: 1.6; text-align: center; margin: 0 0 32px;">Welcome to the neural restaurant revolution! Please verify your email address to complete your account setup.</p>
+          
+          <!-- Verification Code -->
+          <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border: 1px solid #475569; border-radius: 12px; padding: 32px; text-align: center; margin: 32px 0;">
+            <p style="color: #94a3b8; font-size: 14px; margin: 0 0 16px;">Your verification code is:</p>
+            <div style="font-size: 36px; font-weight: bold; color: #06b6d4; letter-spacing: 8px; font-family: 'Courier New', monospace; margin: 16px 0;">{{verificationCode}}</div>
+            <p style="color: #64748b; font-size: 12px; margin: 16px 0 0;">This code expires in {{expiryMinutes}} minutes</p>
+          </div>
+          
+          <!-- Instructions -->
+          <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 8px; padding: 20px; margin: 24px 0;">
+            <div style="display: flex; align-items: flex-start; gap: 12px;">
+              <span style="color: #3b82f6; font-size: 20px;">ℹ️</span>
+              <div>
+                <p style="color: #3b82f6; font-size: 14px; font-weight: 600; margin: 0 0 8px;">Next Steps:</p>
+                <ul style="color: #94a3b8; font-size: 14px; margin: 0; padding-left: 0; list-style: none;">
+                  <li style="margin-bottom: 4px;">• Enter this code on the verification page</li>
+                  <li style="margin-bottom: 4px;">• Complete your account setup</li>
+                  <li>• Start managing your restaurant with AI precision</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Security Notice -->
+          <div style="border-top: 1px solid #374151; padding-top: 24px; margin-top: 32px;">
+            <p style="color: #64748b; font-size: 12px; text-align: center; margin: 0;">If you didn't create an account, please ignore this email. This verification code will expire automatically.</p>
+          </div>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background: #111827; padding: 24px 30px; text-align: center; border-top: 1px solid #374151;">
+          <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 20px; padding: 8px 16px;">
+            <span style="color: #22c55e; font-size: 16px;">🛡️</span>
+            <span style="color: #22c55e; font-size: 12px; font-weight: 600;">Secure Email Verification</span>
+          </div>
+        </div>
+      </div>
+    `);
+    this.templates.set('email-verification', verificationTemplate);
   }
 
   /**
@@ -401,6 +450,95 @@ We look forward to serving you!
   }
 
   /**
+   * Generate 6-digit verification code
+   */
+  generateVerificationCode() {
+    return crypto.randomInt(100000, 999999).toString();
+  }
+
+  /**
+   * Send email verification code
+   */
+  async sendVerificationCode(userEmail, userName, verificationCode) {
+    if (!this.transporter) {
+      logger.warn('Email service not available, skipping verification email');
+      return { success: false, error: 'Email service not configured' };
+    }
+
+    try {
+      const template = this.templates.get('email-verification');
+      if (!template) {
+        throw new Error('Email verification template not found');
+      }
+
+      // Prepare template data
+      const templateData = {
+        userName: userName,
+        verificationCode: verificationCode,
+        expiryMinutes: process.env.EMAIL_VERIFICATION_EXPIRY_MINUTES || 10
+      };
+
+      const htmlContent = template(templateData);
+
+      const mailOptions = {
+        from: `${process.env.FROM_NAME || 'AURA 2030'} <${process.env.FROM_EMAIL}>`,
+        to: userEmail,
+        subject: 'Verify Your AURA 2030 Account - Neural Restaurant OS',
+        html: htmlContent,
+        text: this.generateTextVersionForVerification(templateData)
+      };
+
+      // Log email details for debugging
+      logger.info('Sending email with details:', {
+        to: userEmail,
+        from: mailOptions.from,
+        subject: mailOptions.subject,
+        hasHtmlContent: !!mailOptions.html
+      });
+      
+      const result = await this.transporter.sendMail(mailOptions);
+      
+      logger.info('Verification email sent successfully:', {
+        messageId: result.messageId,
+        to: userEmail,
+        response: result.response
+      });
+      return { success: true, messageId: result.messageId };
+
+    } catch (error) {
+      logger.error('Failed to send verification email:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Generate text version of verification email
+   */
+  generateTextVersionForVerification(data) {
+    return `
+AURA 2030 - Neural Restaurant OS
+Email Verification
+
+Welcome to the neural restaurant revolution!
+
+Your verification code is: ${data.verificationCode}
+
+This code expires in ${data.expiryMinutes} minutes.
+
+Next Steps:
+• Enter this code on the verification page
+• Complete your account setup  
+• Start managing your restaurant with AI precision
+
+If you didn't create an account, please ignore this email.
+
+---
+AURA 2030 Neural Restaurant OS
+Secure Email Verification
+    `;
+  }
+
+  /**
    * Test email configuration
    */
   async testEmailService() {
@@ -442,6 +580,8 @@ module.exports = {
   sendReservationConfirmation: (reservation) => emailService.sendReservationConfirmation(reservation),
   sendReservationReminder: (reservation) => emailService.sendReservationReminder(reservation),
   sendReservationCancellation: (reservation, reason) => emailService.sendReservationCancellation(reservation, reason),
+  generateVerificationCode: () => emailService.generateVerificationCode(),
+  sendVerificationCode: (userEmail, userName, verificationCode) => emailService.sendVerificationCode(userEmail, userName, verificationCode),
   testEmailService: () => emailService.testEmailService(),
   emailService
 };

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
+import { apiService } from '@/services/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -20,7 +21,26 @@ export default function VerifyCodePage() {
   const [isLoading, setIsLoading] = useState(false)
   const [timeLeft, setTimeLeft] = useState(60)
   const [canResend, setCanResend] = useState(false)
+  const [userEmail, setUserEmail] = useState('')
+  const [userName, setUserName] = useState('')
+  const [verificationError, setVerificationError] = useState('')
+  const [resendError, setResendError] = useState('')
   const inputRefs = useRef([])
+
+  // Load user data from session storage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const email = sessionStorage.getItem('verificationEmail')
+      const name = sessionStorage.getItem('userName')
+      if (email) {
+        setUserEmail(email)
+        setUserName(name || email)
+      } else {
+        // Redirect to signup if no email found
+        window.location.href = '/auth/signup'
+      }
+    }
+  }, [])
 
   // Timer countdown
   useEffect(() => {
@@ -55,22 +75,55 @@ export default function VerifyCodePage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     const verificationCode = code.join('')
-    if (verificationCode.length !== 6) return
+    if (verificationCode.length !== 6 || !userEmail) return
 
     setIsLoading(true)
-    // Simulate verification process
-    setTimeout(() => {
+    setVerificationError('')
+
+    try {
+      const response = await apiService.verifyEmail({
+        email: userEmail,
+        verificationCode: verificationCode
+      })
+
+      // Store tokens
+      if (response.tokens) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('aura_access_token', response.tokens.accessToken)
+          localStorage.setItem('aura_refresh_token', response.tokens.refreshToken)
+          localStorage.setItem('aura_user', JSON.stringify(response.user))
+          
+          // Clear verification data from session
+          sessionStorage.removeItem('verificationEmail')
+          sessionStorage.removeItem('userName')
+        }
+      }
+
+      // Redirect to dashboard
+      window.location.href = '/dashboard'
+    } catch (error) {
+      console.error('Verification error:', error)
+      setVerificationError(error.message || 'Invalid verification code. Please try again.')
+    } finally {
       setIsLoading(false)
-      // Redirect to success page or dashboard
-      window.location.href = '/auth/verification-success'
-    }, 2000)
+    }
   }
 
-  const handleResendCode = () => {
-    setTimeLeft(60)
-    setCanResend(false)
-    setCode(['', '', '', '', '', ''])
-    inputRefs.current[0].focus()
+  const handleResendCode = async () => {
+    if (!userEmail) return
+    
+    setResendError('')
+    
+    try {
+      await apiService.resendVerificationCode(userEmail)
+      setTimeLeft(60)
+      setCanResend(false)
+      setCode(['', '', '', '', '', ''])
+      inputRefs.current[0]?.focus()
+    } catch (error) {
+      console.error('Resend error:', error)
+      setResendError(error.message || 'Failed to resend verification code')
+    }
   }
 
   const containerVariants = {
@@ -147,7 +200,7 @@ export default function VerifyCodePage() {
               <p className="text-slate-400">
                 We've sent a 6-digit verification code to
               </p>
-              <p className="text-cyan-300 font-medium">john@example.com</p>
+              <p className="text-cyan-300 font-medium">{userEmail || 'your email'}</p>
             </CardHeader>
 
             <CardContent className="space-y-6">
@@ -175,8 +228,25 @@ export default function VerifyCodePage() {
                   </div>
                 </motion.div>
 
+                {/* Error Display */}
+                {verificationError && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-center"
+                  >
+                    <p className="text-red-400 text-sm">{verificationError}</p>
+                  </motion.div>
+                )}
+
                 {/* Timer */}
-                <motion.div variants={itemVariants} className="text-center">
+                <motion.div variants={itemVariants} className="text-center space-y-3">
+                  {resendError && (
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">
+                      <p className="text-red-400 text-sm">{resendError}</p>
+                    </div>
+                  )}
+                  
                   {!canResend ? (
                     <div className="flex items-center justify-center gap-2 text-slate-400">
                       <Clock className="h-4 w-4" />

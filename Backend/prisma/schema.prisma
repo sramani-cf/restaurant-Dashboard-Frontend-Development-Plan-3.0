@@ -16,12 +16,15 @@ model User {
   lastName         String?
   phone            String?
   avatar           String?
-  role             UserRole          @default(STAFF)
-  status           UserStatus        @default(ACTIVE)
-  isEmailVerified  Boolean           @default(false)
-  lastLoginAt      DateTime?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  role                    UserRole          @default(STAFF)
+  status                  UserStatus        @default(ACTIVE)
+  isEmailVerified         Boolean           @default(false)
+  emailVerificationCode   String?
+  emailVerificationExpiry DateTime?
+  emailVerifiedAt         DateTime?
+  lastLoginAt             DateTime?
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
   customerProfiles Customer?
   inventoryLogs    InventoryLog[]
   notifications    Notification[]

@@ -6,6 +6,49 @@ class ApiService {
     this.timeout = parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT) || 30000
   }
 
+  // Authentication endpoints
+  async register(userData) {
+    return this.request('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    })
+  }
+
+  async login(credentials) {
+    return this.request('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    })
+  }
+
+  async verifyEmail(verificationData) {
+    return this.request('/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify(verificationData),
+    })
+  }
+
+  async resendVerificationCode(email) {
+    return this.request('/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    })
+  }
+
+  async refreshToken(refreshToken) {
+    return this.request('/auth/refresh', {
+      method: 'POST',
+      body: JSON.stringify({ refreshToken }),
+    })
+  }
+
+  async logout(refreshToken) {
+    return this.request('/auth/logout', {
+      method: 'POST',
+      body: JSON.stringify({ refreshToken }),
+    })
+  }
+
   // Helper method for making HTTP requests
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}/api/${this.apiVersion}${endpoint}`
@@ -86,4 +129,7 @@ class ApiError extends Error {
   }
 }
 
-export { ApiService, ApiError }
+// Create and export a singleton instance
+const apiService = new ApiService()
+
+export { ApiService, ApiError, apiService }

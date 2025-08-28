@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
+import { apiService } from '@/services/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -33,16 +34,56 @@ export default function SignupPage() {
     agreeTerms: false
   })
   const [isLoading, setIsLoading] = useState(false)
+  const [errors, setErrors] = useState({})
+  const [apiError, setApiError] = useState('')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsLoading(true)
-    // Simulate signup process
-    setTimeout(() => {
+    setErrors({})
+    setApiError('')
+
+    // Basic validation
+    const newErrors = {}
+    if (!formData.firstName) newErrors.firstName = 'First name is required'
+    if (!formData.lastName) newErrors.lastName = 'Last name is required'
+    if (!formData.email) newErrors.email = 'Email is required'
+    if (!formData.password) newErrors.password = 'Password is required'
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match'
+    }
+    if (!formData.agreeTerms) newErrors.agreeTerms = 'You must agree to the terms'
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
       setIsLoading(false)
-      // Redirect to email verification
+      return
+    }
+
+    try {
+      // Call register API
+      const response = await apiService.register({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone || undefined,
+        password: formData.password,
+      })
+
+      // Store user email for verification page
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('verificationEmail', formData.email)
+        sessionStorage.setItem('userName', `${formData.firstName} ${formData.lastName}`)
+      }
+
+      // Redirect to email verification page
       window.location.href = '/auth/verify-email'
-    }, 2000)
+    } catch (error) {
+      console.error('Signup error:', error)
+      setApiError(error.message || 'An error occurred during signup. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleInputChange = (field, value) => {
@@ -233,6 +274,17 @@ export default function SignupPage() {
                     </Link>
                   </span>
                 </motion.div>
+
+                {/* Error Display */}
+                {apiError && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-center"
+                  >
+                    <p className="text-red-400 text-sm">{apiError}</p>
+                  </motion.div>
+                )}
 
                 {/* Signup Button */}
                 <motion.div variants={itemVariants}>
