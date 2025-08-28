@@ -60,6 +60,16 @@
       "key": "tableId",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "pendingVerificationEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "verificationCode",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -158,9 +168,13 @@
                 "exec": [
                   "if (pm.response.code === 201) {",
                   "    const responseJson = pm.response.json();",
-                  "    if (responseJson.tokens) {",
-                  "        pm.collectionVariables.set('accessToken', responseJson.tokens.accessToken);",
-                  "        pm.collectionVariables.set('refreshToken', responseJson.tokens.refreshToken);",
+                  "    // Email verification flow - tokens not provided on registration",
+                  "    if (responseJson.message && responseJson.message.includes('verification')) {",
+                  "        console.log('Email verification required. Check your email for verification code.');",
+                  "    }",
+                  "    // Store user data for verification step",
+                  "    if (responseJson.data && responseJson.data.email) {",
+                  "        pm.collectionVariables.set('pendingVerificationEmail', responseJson.data.email);",
                   "    }",
                   "}"
                 ]
@@ -183,6 +197,69 @@
               "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/register",
               "host": ["{{baseUrl}}"],
               "path": ["api", "{{apiVersion}}", "auth", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const responseJson = pm.response.json();",
+                  "    if (responseJson.tokens) {",
+                  "        pm.collectionVariables.set('accessToken', responseJson.tokens.accessToken);",
+                  "        pm.collectionVariables.set('refreshToken', responseJson.tokens.refreshToken);",
+                  "        console.log('Email verified successfully. Tokens set.');",
+                  "        // Clear pending verification email",
+                  "        pm.collectionVariables.set('pendingVerificationEmail', '');",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{pendingVerificationEmail}}\",\n  \"verificationCode\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/verify-email",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "auth", "verify-email"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Resend Verification Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{pendingVerificationEmail}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/resend-verification",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "auth", "resend-verification"]
             }
           },
           "response": []
