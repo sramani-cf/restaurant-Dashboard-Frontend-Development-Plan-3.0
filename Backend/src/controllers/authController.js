@@ -693,6 +693,97 @@ class AuthController {
       next(error);
     }
   }
+
+  /**
+   * Initiate Google OAuth authentication
+   */
+  async initiateGoogleAuth(req, res, next) {
+    // This will be handled by passport middleware
+    // The actual redirect is done by passport.authenticate('google')
+    logger.info('Initiating Google OAuth authentication');
+  }
+
+  /**
+   * Handle Google OAuth callback
+   */
+  async googleAuthCallback(req, res, next) {
+    try {
+      // At this point, passport has already authenticated the user
+      // and req.user contains the user information
+      
+      if (!req.user) {
+        logger.error('Google OAuth callback: No user found');
+        return res.redirect(`${process.env.CORS_ORIGIN}/auth/login?error=oauth_failed`);
+      }
+
+      const user = req.user;
+      
+      // Generate JWT tokens for the authenticated user
+      const tokenPair = jwtManager.generateTokenPair({
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+      });
+
+      // Store refresh token in database
+      await database.getClient().refreshToken.create({
+        data: {
+          token: tokenPair.refreshToken,
+          userId: user.id,
+          expiresAt: jwtManager.getTokenExpiration(tokenPair.refreshToken),
+        },
+      });
+
+      logger.info('Google OAuth successful:', { userId: user.id, email: user.email });
+
+      // Redirect to frontend with tokens (for development)
+      // In production, you might want to handle this differently
+      const redirectUrl = new URL(`${process.env.CORS_ORIGIN}/auth/oauth/success`);
+      redirectUrl.searchParams.append('accessToken', tokenPair.accessToken);
+      redirectUrl.searchParams.append('refreshToken', tokenPair.refreshToken);
+      
+      res.redirect(redirectUrl.toString());
+      
+    } catch (error) {
+      logger.error('Google OAuth callback error:', error);
+      res.redirect(`${process.env.CORS_ORIGIN}/auth/login?error=oauth_callback_failed`);
+    }
+  }
+
+  /**
+   * Verify Google OAuth token from frontend
+   */
+  async verifyGoogleToken(req, res, next) {
+    try {
+      const { token } = req.body;
+      
+      if (!token) {
+        throw new ValidationError('Google token is required');
+      }
+
+      // You can use Google's OAuth library to verify the token
+      // For now, we'll assume the token is valid and extract user info
+      // In production, you should verify the token with Google's API
+
+      logger.info('Google token verification - feature to be implemented');
+      
+      res.json({
+        message: 'Google token verification endpoint',
+        note: 'This endpoint can be used for client-side OAuth flow'
+      });
+      
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Handle Google OAuth failure
+   */
+  async googleAuthFailure(req, res) {
+    logger.error('Google OAuth authentication failed');
+    res.redirect(`${process.env.CORS_ORIGIN}/auth/login?error=oauth_denied`);
+  }
 }
 
 module.exports = new AuthController();

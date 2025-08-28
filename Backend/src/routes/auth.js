@@ -2,6 +2,7 @@ const express = require('express');
 const authController = require('../controllers/authController');
 const { authenticate, optionalAuthenticate } = require('../middleware/auth');
 const { validateSchema } = require('../middleware/validation');
+const { passport } = require('../config/passport');
 const {
   userRegister,
   userLogin,
@@ -507,5 +508,97 @@ router.post('/verify-email', authController.verifyEmail);
  *         description: Internal server error
  */
 router.post('/resend-verification', authController.resendVerificationCode);
+
+/**
+ * @swagger
+ * /auth/google:
+ *   get:
+ *     summary: Initiate Google OAuth authentication
+ *     description: Redirects user to Google OAuth consent screen
+ *     tags: [Authentication, OAuth]
+ *     responses:
+ *       302:
+ *         description: Redirect to Google OAuth
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/google', 
+  passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+
+/**
+ * @swagger
+ * /auth/google/callback:
+ *   get:
+ *     summary: Handle Google OAuth callback
+ *     description: Processes the OAuth callback from Google and creates/authenticates user
+ *     tags: [Authentication, OAuth]
+ *     parameters:
+ *       - in: query
+ *         name: code
+ *         schema:
+ *           type: string
+ *         description: OAuth authorization code from Google
+ *       - in: query
+ *         name: state
+ *         schema:
+ *           type: string
+ *         description: OAuth state parameter
+ *     responses:
+ *       302:
+ *         description: Redirect to frontend with authentication tokens
+ *       400:
+ *         description: OAuth authentication failed
+ */
+router.get('/google/callback',
+  passport.authenticate('google', { failureRedirect: '/auth/google/failure' }),
+  authController.googleAuthCallback
+);
+
+/**
+ * @swagger
+ * /auth/google/failure:
+ *   get:
+ *     summary: Handle Google OAuth authentication failure
+ *     description: Redirects user to login page with error message
+ *     tags: [Authentication, OAuth]
+ *     responses:
+ *       302:
+ *         description: Redirect to login page with error
+ */
+router.get('/google/failure', authController.googleAuthFailure);
+
+/**
+ * @swagger
+ * /auth/google/verify:
+ *   post:
+ *     summary: Verify Google OAuth token (client-side flow)
+ *     description: Verify Google OAuth token from client-side implementation
+ *     tags: [Authentication, OAuth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: Google OAuth token from client
+ *     responses:
+ *       200:
+ *         description: Token verified successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthResponse'
+ *       400:
+ *         description: Invalid token
+ *       500:
+ *         description: Internal server error
+ */
+router.post('/google/verify', authController.verifyGoogleToken);
 
 module.exports = router;

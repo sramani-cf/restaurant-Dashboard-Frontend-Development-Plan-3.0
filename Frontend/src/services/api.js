@@ -49,6 +49,24 @@ class ApiService {
     })
   }
 
+  // Google OAuth methods
+  async verifyGoogleToken(token) {
+    return this.request('/auth/google/verify', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    })
+  }
+
+  // Get user profile (used after OAuth success)
+  async getUserProfile(accessToken) {
+    return this.request('/auth/profile', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    })
+  }
+
   // Helper method for making HTTP requests
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}/api/${this.apiVersion}${endpoint}`

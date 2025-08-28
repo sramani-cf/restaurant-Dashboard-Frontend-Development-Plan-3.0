@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { apiService } from '@/services/api'
+import { authClient } from '@/lib/authClient'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -88,6 +89,15 @@ export default function SignupPage() {
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const handleGoogleSignup = async () => {
+    try {
+      await authClient.signUpWithGoogle()
+    } catch (error) {
+      console.error('Google signup error:', error)
+      setApiError('Google signup failed. Please try again.')
+    }
   }
 
   const containerVariants = {
@@ -324,13 +334,17 @@ export default function SignupPage() {
                 <Button
                   variant="outline"
                   className="border-slate-700 bg-white/5 hover:bg-white/10 text-slate-300"
+                  disabled={isLoading}
                 >
                   <Github className="mr-2 h-4 w-4" />
                   GitHub
                 </Button>
                 <Button
+                  type="button"
                   variant="outline"
                   className="border-slate-700 bg-white/5 hover:bg-white/10 text-slate-300"
+                  onClick={handleGoogleSignup}
+                  disabled={isLoading}
                 >
                   <Chrome className="mr-2 h-4 w-4" />
                   Google

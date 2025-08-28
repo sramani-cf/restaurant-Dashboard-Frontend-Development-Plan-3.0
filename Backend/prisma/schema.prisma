@@ -11,7 +11,7 @@ model User {
   id               String            @id @default(uuid())
   email            String            @unique
   username         String?           @unique
-  password         String
+  password         String?
   firstName        String?
   lastName         String?
   phone            String?
@@ -23,8 +23,14 @@ model User {
   emailVerificationExpiry DateTime?
   emailVerifiedAt         DateTime?
   lastLoginAt             DateTime?
+  // OAuth fields
+  googleId                String?           @unique
+  provider                String?           @default("email")
+  providerAccountId       String?
+  picture                 String?
   createdAt               DateTime          @default(now())
   updatedAt               DateTime          @updatedAt
+  accounts         Account[]
   customerProfiles Customer?
   inventoryLogs    InventoryLog[]
   notifications    Notification[]
@@ -46,6 +52,27 @@ model RefreshToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("refresh_tokens")
+}
+
+model Account {
+  id                String    @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refreshToken      String?
+  accessToken       String?
+  expiresAt         Int?
+  tokenType         String?
+  scope             String?
+  idToken           String?
+  sessionState      String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
 }
 
 model Restaurant {

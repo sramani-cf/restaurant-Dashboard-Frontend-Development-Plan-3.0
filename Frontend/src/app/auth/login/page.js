@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
+import { apiService } from '@/services/api'
+import { authClient } from '@/lib/authClient'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -22,16 +24,40 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsLoading(true)
-    // Simulate login process
-    setTimeout(() => {
+    setError('')
+
+    try {
+      const response = await apiService.login({ email, password })
+      
+      // Store tokens and user data
+      if (response.tokens) {
+        localStorage.setItem('aura_access_token', response.tokens.accessToken)
+        localStorage.setItem('aura_refresh_token', response.tokens.refreshToken)
+        localStorage.setItem('aura_user', JSON.stringify(response.user))
+        
+        // Redirect to dashboard
+        window.location.href = '/dashboard'
+      }
+    } catch (error) {
+      console.error('Login error:', error)
+      setError(error.message || 'Login failed. Please check your credentials.')
+    } finally {
       setIsLoading(false)
-      // Redirect to dashboard
-      window.location.href = '/dashboard'
-    }, 2000)
+    }
+  }
+
+  const handleGoogleLogin = async () => {
+    try {
+      await authClient.signInWithGoogle()
+    } catch (error) {
+      console.error('Google login error:', error)
+      setError('Google login failed. Please try again.')
+    }
   }
 
   const containerVariants = {
@@ -146,6 +172,17 @@ export default function LoginPage() {
                   </Link>
                 </motion.div>
 
+                {/* Error Display */}
+                {error && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-center"
+                  >
+                    <p className="text-red-400 text-sm">{error}</p>
+                  </motion.div>
+                )}
+
                 {/* Login Button */}
                 <motion.div variants={itemVariants}>
                   <Button
@@ -184,13 +221,17 @@ export default function LoginPage() {
                 <Button
                   variant="outline"
                   className="border-slate-700 bg-white/5 hover:bg-white/10 text-slate-300"
+                  disabled={isLoading}
                 >
                   <Github className="mr-2 h-4 w-4" />
                   GitHub
                 </Button>
                 <Button
+                  type="button"
                   variant="outline"
                   className="border-slate-700 bg-white/5 hover:bg-white/10 text-slate-300"
+                  onClick={handleGoogleLogin}
+                  disabled={isLoading}
                 >
                   <Chrome className="mr-2 h-4 w-4" />
                   Google

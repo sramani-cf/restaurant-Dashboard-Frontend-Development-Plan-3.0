@@ -1,12 +1,14 @@
 const express = require('express');
 const path = require('path');
 const morgan = require('morgan');
+const session = require('express-session');
 
 // Import configurations and utilities
 const config = require('./config');
 const logger = require('./config/logger');
 const database = require('./config/database');
 const redis = require('./config/redis');
+const { passport } = require('./config/passport');
 
 // Import middleware
 const security = require('./middleware/security');
@@ -64,6 +66,22 @@ app.use(express.urlencoded({
 
 // Request size limiting
 app.use(security.requestSizeLimit);
+
+// Session middleware for OAuth
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'fallback-session-secret-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: config.nodeEnv === 'production', // Use secure cookies in production
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+// Passport middleware
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Logging middleware
 if (config.nodeEnv === 'development') {
