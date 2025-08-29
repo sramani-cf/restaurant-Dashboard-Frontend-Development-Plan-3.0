@@ -56,7 +56,8 @@ class EmailService {
         'reservation-reminder.hbs',
         'reservation-cancelled.hbs',
         'waitlist-promotion.hbs',
-        'email-verification.hbs'
+        'email-verification.hbs',
+        'password-reset.hbs'
       ];
 
       for (const file of templateFiles) {
@@ -224,6 +225,85 @@ class EmailService {
       </html>
     `);
     this.templates.set('email-verification', verificationTemplate);
+
+    // Password reset template
+    const passwordResetTemplate = handlebars.compile(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Password Reset</title>
+      </head>
+      <body style="margin: 0; padding: 20px; background-color: #f8fafc; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          
+          <!-- Header -->
+          <tr>
+            <td style="padding: 40px 40px 30px; text-align: center; border-bottom: 1px solid #e5e7eb;">
+              <h1 style="margin: 0; font-size: 32px; font-weight: 700; color: #1f2937; letter-spacing: -0.5px;">AURA 2030</h1>
+              <p style="margin: 8px 0 0; font-size: 14px; color: #6b7280;">Neural Restaurant OS</p>
+            </td>
+          </tr>
+          
+          <!-- Main Content -->
+          <tr>
+            <td style="padding: 40px;">
+              
+              <!-- Title -->
+              <h2 style="margin: 0 0 20px; font-size: 24px; font-weight: 600; color: #1f2937; text-align: center;">Reset Your Password</h2>
+              
+              <!-- Greeting -->
+              <p style="margin: 0 0 30px; font-size: 16px; line-height: 1.6; color: #4b5563;">
+                Hello {{userName}},<br><br>
+                We received a request to reset your password for your AURA 2030 account. Click the button below to reset your password.
+              </p>
+              
+              <!-- Reset Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 30px 0;">
+                <tr>
+                  <td style="text-align: center;">
+                    <a href="{{resetLink}}" style="display: inline-block; padding: 16px 32px; background: linear-gradient(135deg, #f97316, #dc2626); color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px; box-shadow: 0 4px 6px rgba(249, 115, 22, 0.3);">Reset My Password</a>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Alternative Link -->
+              <p style="margin: 30px 0; font-size: 14px; line-height: 1.6; color: #6b7280; text-align: center;">
+                If the button doesn't work, you can copy and paste this link into your browser:
+              </p>
+              <p style="margin: 0; font-size: 14px; color: #2563eb; word-break: break-all; text-align: center; padding: 15px; background-color: #f3f4f6; border-radius: 6px;">
+                {{resetLink}}
+              </p>
+              
+              <!-- Security Notice -->
+              <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 20px; margin: 30px 0;">
+                <p style="margin: 0 0 10px; font-size: 14px; font-weight: 600; color: #92400e;">⚠️ Security Notice:</p>
+                <ul style="margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6; color: #92400e;">
+                  <li style="margin-bottom: 8px;">This link will expire in 1 hour for your security</li>
+                  <li style="margin-bottom: 8px;">This link can only be used once</li>
+                  <li>If you didn't request this reset, please ignore this email</li>
+                </ul>
+              </div>
+              
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 20px 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; text-align: center; border-radius: 0 0 8px 8px;">
+              <p style="margin: 0; font-size: 12px; color: #6b7280;">
+                © 2024 AURA 2030 - Neural Restaurant OS<br>
+                <span style="color: #dc2626; font-weight: 600;">🔒 Secure Password Reset</span>
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+      </body>
+      </html>
+    `);
+    this.templates.set('password-reset', passwordResetTemplate);
   }
 
   /**
@@ -569,6 +649,92 @@ This verification code will expire automatically for your security.
   }
 
   /**
+   * Send password reset email
+   */
+  async sendPasswordResetEmail(userEmail, userName, resetToken) {
+    if (!this.transporter) {
+      logger.warn('Email service not available, skipping password reset email');
+      return { success: false, error: 'Email service not configured' };
+    }
+
+    try {
+      const template = this.templates.get('password-reset');
+      if (!template) {
+        throw new Error('Password reset template not found');
+      }
+
+      // Create reset link - using frontend URL
+      const frontendUrl = process.env.CORS_ORIGIN?.split(',')[0] || 'http://localhost:3000';
+      const resetLink = `${frontendUrl}/auth/reset-password/${resetToken}`;
+
+      // Prepare template data
+      const templateData = {
+        userName: userName,
+        resetLink: resetLink,
+        expiryHours: 1
+      };
+
+      const htmlContent = template(templateData);
+
+      const mailOptions = {
+        from: `${process.env.FROM_NAME || 'AURA 2030'} <${process.env.FROM_EMAIL}>`,
+        to: userEmail,
+        subject: 'Reset Your AURA 2030 Password - Neural Restaurant OS',
+        html: htmlContent,
+        text: this.generateTextVersionForPasswordReset(templateData)
+      };
+
+      // Log email details for debugging
+      logger.info('Sending password reset email with details:', {
+        to: userEmail,
+        from: mailOptions.from,
+        subject: mailOptions.subject,
+        resetLink: resetLink
+      });
+      
+      const result = await this.transporter.sendMail(mailOptions);
+      
+      logger.info('Password reset email sent successfully:', {
+        messageId: result.messageId,
+        to: userEmail,
+        response: result.response
+      });
+      return { success: true, messageId: result.messageId };
+
+    } catch (error) {
+      logger.error('Failed to send password reset email:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Generate text version of password reset email
+   */
+  generateTextVersionForPasswordReset(data) {
+    return `
+AURA 2030 - Neural Restaurant OS
+=====================================
+
+PASSWORD RESET REQUEST
+
+Hello ${data.userName},
+
+We received a request to reset your password for your AURA 2030 account.
+
+To reset your password, please click or copy the following link:
+${data.resetLink}
+
+SECURITY NOTICE:
+• This link will expire in ${data.expiryHours} hour(s) for your security
+• This link can only be used once
+• If you didn't request this reset, please ignore this email
+
+© 2024 AURA 2030 - Neural Restaurant OS
+🔒 Secure Password Reset
+    `;
+  }
+
+  /**
    * Test email configuration
    */
   async testEmailService() {
@@ -612,6 +778,7 @@ module.exports = {
   sendReservationCancellation: (reservation, reason) => emailService.sendReservationCancellation(reservation, reason),
   generateVerificationCode: () => emailService.generateVerificationCode(),
   sendVerificationCode: (userEmail, userName, verificationCode) => emailService.sendVerificationCode(userEmail, userName, verificationCode),
+  sendPasswordResetEmail: (userEmail, userName, resetToken) => emailService.sendPasswordResetEmail(userEmail, userName, resetToken),
   testEmailService: () => emailService.testEmailService(),
   emailService
 };

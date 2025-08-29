@@ -104,7 +104,7 @@ const generalRateLimit = rateLimit({
  */
 const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Only 5 attempts per window
+  max: 50, // Temporarily increased from 5 to 50 attempts per window
   store: createRedisStore(),
   skipSuccessfulRequests: false,
   standardHeaders: true,

@@ -8,7 +8,9 @@ const {
   userLogin,
   changePassword,
   updateProfile,
-  refreshToken
+  refreshToken,
+  forgotPassword,
+  resetPassword
 } = require('../schemas/authSchemas');
 
 const router = express.Router();
@@ -508,6 +510,91 @@ router.post('/verify-email', authController.verifyEmail);
  *         description: Internal server error
  */
 router.post('/resend-verification', authController.resendVerificationCode);
+
+/**
+ * @swagger
+ * /auth/forgot-password:
+ *   post:
+ *     summary: Request password reset
+ *     description: Send password reset email to user's registered email address
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: User's registered email address
+ *     responses:
+ *       200:
+ *         description: Password reset email sent (or would be sent if email exists)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Invalid email format
+ *       500:
+ *         description: Internal server error
+ */
+router.post('/forgot-password', 
+  validateSchema(forgotPassword),
+  authController.forgotPassword
+);
+
+/**
+ * @swagger
+ * /auth/reset-password:
+ *   post:
+ *     summary: Reset password with token
+ *     description: Reset user password using the token received via email
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - newPassword
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: Password reset token from email
+ *               newPassword:
+ *                 type: string
+ *                 minLength: 8
+ *                 maxLength: 128
+ *                 description: New password (must meet strength requirements)
+ *     responses:
+ *       200:
+ *         description: Password reset successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Invalid or expired token, or weak password
+ *       500:
+ *         description: Internal server error
+ */
+router.post('/reset-password', 
+  validateSchema(resetPassword),
+  authController.resetPassword
+);
 
 /**
  * @swagger

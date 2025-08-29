@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { apiService } from '@/services/api'
 import {
   Zap,
   Shield,
@@ -21,16 +22,22 @@ export default function ResetPasswordPage() {
   const [step, setStep] = useState(1) // 1: Email input, 2: Email sent confirmation
   const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsLoading(true)
+    setError('')
 
-    // Simulate password reset request
-    setTimeout(() => {
-      setIsLoading(false)
+    try {
+      await apiService.forgotPassword(email)
       setStep(2)
-    }, 2000)
+    } catch (error) {
+      console.error('Password reset error:', error)
+      setError(error.message || 'Failed to send reset email. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const containerVariants = {
@@ -172,6 +179,17 @@ export default function ResetPasswordPage() {
                         </div>
                       </div>
                     </motion.div>
+
+                    {/* Error Display */}
+                    {error && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-center"
+                      >
+                        <p className="text-red-400 text-sm">{error}</p>
+                      </motion.div>
+                    )}
 
                     {/* Reset Button */}
                     <motion.div variants={itemVariants}>

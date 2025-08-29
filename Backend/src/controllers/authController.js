@@ -4,8 +4,9 @@ const redis = require('../config/redis');
 const jwtManager = require('../utils/jwt');
 const passwordManager = require('../utils/password');
 const { AuthenticationError, ValidationError, ConflictError } = require('../middleware/errorHandler');
-const { generateVerificationCode, sendVerificationCode } = require('../services/emailService');
+const { generateVerificationCode, sendVerificationCode, sendPasswordResetEmail } = require('../services/emailService');
 const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 
 class AuthController {
   /**
@@ -713,7 +714,8 @@ class AuthController {
       
       if (!req.user) {
         logger.error('Google OAuth callback: No user found');
-        return res.redirect(`${process.env.CORS_ORIGIN}/auth/login?error=oauth_failed`);
+        const frontendOrigin = process.env.CORS_ORIGIN?.split(',')[0] || 'http://localhost:3000';
+        return res.redirect(`${frontendOrigin}/auth/login?error=oauth_failed`);
       }
 
       const user = req.user;
@@ -738,7 +740,8 @@ class AuthController {
 
       // Redirect to frontend with tokens (for development)
       // In production, you might want to handle this differently
-      const redirectUrl = new URL(`${process.env.CORS_ORIGIN}/auth/oauth/success`);
+      const frontendOrigin = process.env.CORS_ORIGIN?.split(',')[0] || 'http://localhost:3000';
+      const redirectUrl = new URL(`${frontendOrigin}/auth/oauth/success`);
       redirectUrl.searchParams.append('accessToken', tokenPair.accessToken);
       redirectUrl.searchParams.append('refreshToken', tokenPair.refreshToken);
       
@@ -746,7 +749,8 @@ class AuthController {
       
     } catch (error) {
       logger.error('Google OAuth callback error:', error);
-      res.redirect(`${process.env.CORS_ORIGIN}/auth/login?error=oauth_callback_failed`);
+      const frontendOrigin = process.env.CORS_ORIGIN?.split(',')[0] || 'http://localhost:3000';
+      res.redirect(`${frontendOrigin}/auth/login?error=oauth_callback_failed`);
     }
   }
 
@@ -782,7 +786,149 @@ class AuthController {
    */
   async googleAuthFailure(req, res) {
     logger.error('Google OAuth authentication failed');
-    res.redirect(`${process.env.CORS_ORIGIN}/auth/login?error=oauth_denied`);
+    const frontendOrigin = process.env.CORS_ORIGIN?.split(',')[0] || 'http://localhost:3000';
+    res.redirect(`${frontendOrigin}/auth/login?error=oauth_denied`);
+  }
+
+  /**
+   * Request password reset
+   */
+  async forgotPassword(req, res, next) {
+    try {
+      const { email } = req.body;
+      
+      const prisma = database.getClient();
+      
+      // Find user by email - but don't reveal if email exists (security)
+      const user = await prisma.user.findUnique({
+        where: { email },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          status: true,
+        },
+      });
+      
+      // Always respond with success to prevent email enumeration
+      // But only send email if user exists and is active
+      if (user && user.status === 'ACTIVE') {
+        // Generate secure reset token
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+        const resetExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+        
+        // Store hashed token and expiry in database
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            passwordResetToken: hashedToken,
+            passwordResetExpiry: resetExpiry,
+          },
+        });
+        
+        // Send reset email with unhashed token
+        const emailResult = await sendPasswordResetEmail(
+          user.email,
+          `${user.firstName} ${user.lastName}`.trim() || user.email,
+          resetToken
+        );
+        
+        if (!emailResult.success) {
+          logger.warn('Failed to send password reset email:', emailResult.error);
+        }
+        
+        logger.info('Password reset requested:', { 
+          userId: user.id, 
+          email: user.email,
+          emailSent: emailResult.success 
+        });
+      } else {
+        logger.info('Password reset requested for non-existent or inactive user:', { email });
+      }
+      
+      // Always return success response
+      res.json({
+        message: 'If an account with that email exists, we have sent a password reset link.',
+      });
+      
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Reset password with token
+   */
+  async resetPassword(req, res, next) {
+    try {
+      const { token, newPassword } = req.body;
+      
+      const prisma = database.getClient();
+      
+      // Hash the provided token to compare with stored hash
+      const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+      
+      // Find user with matching token and valid expiry
+      const user = await prisma.user.findFirst({
+        where: {
+          passwordResetToken: hashedToken,
+          passwordResetExpiry: {
+            gt: new Date(), // Token not expired
+          },
+          status: 'ACTIVE',
+        },
+        select: {
+          id: true,
+          email: true,
+          password: true,
+        },
+      });
+      
+      if (!user) {
+        throw new ValidationError('Invalid or expired reset token');
+      }
+      
+      // Validate new password strength
+      const passwordValidation = passwordManager.validatePasswordStrength(newPassword);
+      if (!passwordValidation.isValid) {
+        throw new ValidationError('New password does not meet requirements', passwordValidation.errors);
+      }
+      
+      // Check if new password is the same as current password
+      const isSamePassword = await passwordManager.comparePassword(newPassword, user.password);
+      if (isSamePassword) {
+        throw new ValidationError('New password must be different from current password');
+      }
+      
+      // Hash new password
+      const hashedNewPassword = await passwordManager.hashPassword(newPassword);
+      
+      // Update password and clear reset token fields
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          password: hashedNewPassword,
+          passwordResetToken: null,
+          passwordResetExpiry: null,
+        },
+      });
+      
+      // Invalidate all existing refresh tokens (force re-login on all devices)
+      await prisma.refreshToken.deleteMany({
+        where: { userId: user.id },
+      });
+      
+      logger.info('Password reset completed:', { userId: user.id, email: user.email });
+      
+      res.json({
+        message: 'Password has been reset successfully. Please login with your new password.',
+      });
+      
+    } catch (error) {
+      next(error);
+    }
   }
 }
 

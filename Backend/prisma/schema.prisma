@@ -25,6 +25,8 @@ model User {
   emailVerificationCode   String?
   emailVerificationExpiry DateTime?
   emailVerifiedAt         DateTime?
+  passwordResetToken      String?
+  passwordResetExpiry     DateTime?
   googleId                String?           @unique
   picture                 String?
   provider                String?           @default("email")

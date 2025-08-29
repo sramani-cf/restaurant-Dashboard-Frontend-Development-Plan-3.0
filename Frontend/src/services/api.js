@@ -67,6 +67,21 @@ class ApiService {
     })
   }
 
+  // Password reset methods
+  async forgotPassword(email) {
+    return this.request('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    })
+  }
+
+  async resetPassword(token, newPassword) {
+    return this.request('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword }),
+    })
+  }
+
   // Helper method for making HTTP requests
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}/api/${this.apiVersion}${endpoint}`

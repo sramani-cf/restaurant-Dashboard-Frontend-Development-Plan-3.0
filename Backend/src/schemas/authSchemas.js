@@ -83,10 +83,25 @@ const refreshToken = Joi.object({
   }),
 });
 
+// Forgot password schema
+const forgotPassword = Joi.object({
+  email: emailSchema,
+});
+
+// Reset password schema
+const resetPassword = Joi.object({
+  token: Joi.string().required().messages({
+    'any.required': 'Reset token is required',
+  }),
+  newPassword: passwordSchema.required(),
+});
+
 module.exports = {
   userRegister,
   userLogin,
   changePassword,
   updateProfile,
   refreshToken,
+  forgotPassword,
+  resetPassword,
 };
