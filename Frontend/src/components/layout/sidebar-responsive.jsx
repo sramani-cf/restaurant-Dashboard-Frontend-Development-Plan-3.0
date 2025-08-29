@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { RestaurantSwitcher } from './restaurant-switcher'
 import {
   LayoutDashboard,
   CreditCard,
@@ -206,6 +207,11 @@ export function ResponsiveSidebar({ isMobile = false, onClose = () => {} }) {
             </div>
           </div>
         </motion.div>
+
+        {/* Restaurant Switcher */}
+        <div className="px-4 py-3 border-b border-cyan-500/10">
+          <RestaurantSwitcher />
+        </div>
 
         {/* Navigation */}
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-500/30 scrollbar-track-transparent relative">

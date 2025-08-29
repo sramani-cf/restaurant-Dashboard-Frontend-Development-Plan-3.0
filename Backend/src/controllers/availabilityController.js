@@ -21,18 +21,13 @@ class AvailabilityController {
         throw new NotFoundError('Restaurant not found');
       }
 
-      // Check if restaurant is open on the requested date
+      // For now, assume restaurant is open daily from 11:00 AM to 11:00 PM
+      // TODO: Add operating hours and blackout dates table to schema
       const requestDate = new Date(date);
-      const dayOfWeek = requestDate.getDay();
+      const [requestHour] = time.split(':').map(Number);
       
-      const operatingHours = await prisma.operatingHours.findFirst({
-        where: {
-          restaurantId,
-          dayOfWeek
-        }
-      });
-
-      if (!operatingHours || !operatingHours.isOpen) {
+      // Simple business hours check (11 AM to 11 PM)
+      if (requestHour < 11 || requestHour >= 23) {
         return res.json({
           message: 'Availability checked successfully',
           availability: AvailabilityDto.toResponse({
@@ -44,37 +39,7 @@ class AvailabilityController {
             availableTables: [],
             alternativeSlots: [],
             waitlistAvailable: true,
-            message: 'Restaurant is closed on this day'
-          })
-        });
-      }
-
-      // Check for blackout dates
-      const blackoutDate = await prisma.blackoutDate.findFirst({
-        where: {
-          restaurantId,
-          OR: [
-            {
-              startDate: { lte: requestDate },
-              endDate: { gte: requestDate }
-            }
-          ]
-        }
-      });
-
-      if (blackoutDate) {
-        return res.json({
-          message: 'Availability checked successfully',
-          availability: AvailabilityDto.toResponse({
-            date,
-            time,
-            partySize: parseInt(partySize),
-            duration: parseInt(duration) || 120,
-            isAvailable: false,
-            availableTables: [],
-            alternativeSlots: [],
-            waitlistAvailable: blackoutDate.allowWaitlist || false,
-            message: blackoutDate.reason || 'Restaurant is not available on this date'
+            message: 'Restaurant is closed at this time (open 11:00 AM - 11:00 PM)'
           })
         });
       }

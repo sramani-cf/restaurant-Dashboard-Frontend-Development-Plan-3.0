@@ -38,7 +38,7 @@
     },
     {
       "key": "restaurantId",
-      "value": "",
+      "value": "5de5ec81-b1a4-4b30-bf05-981b7ba50176",
       "type": "string"
     },
     {
@@ -491,6 +491,50 @@
               "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/logout-all",
               "host": ["{{baseUrl}}"],
               "path": ["api", "{{apiVersion}}", "auth", "logout-all"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testUserEmail}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/forgot-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "auth", "forgot-password"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"reset-token-from-email\",\n  \"password\": \"NewSecurePassword123!\",\n  \"confirmPassword\": \"NewSecurePassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/reset-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "auth", "reset-password"]
             }
           },
           "response": []
@@ -1130,21 +1174,25 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/{{apiVersion}}/restaurants/{{restaurantId}}/reservations/availability?date=2024-12-25&partySize=4&timeSlot=19:00",
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/restaurants/{{restaurantId}}/reservations/availability/check?date=2024-12-25&time=19:00&partySize=4&duration=120",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "{{apiVersion}}", "restaurants", "{{restaurantId}}", "reservations", "availability"],
+              "path": ["api", "{{apiVersion}}", "restaurants", "{{restaurantId}}", "reservations", "availability", "check"],
               "query": [
                 {
                   "key": "date",
                   "value": "2024-12-25"
                 },
                 {
+                  "key": "time",
+                  "value": "19:00"
+                },
+                {
                   "key": "partySize",
                   "value": "4"
                 },
                 {
-                  "key": "timeSlot",
-                  "value": "19:00"
+                  "key": "duration",
+                  "value": "120"
                 }
               ]
             }

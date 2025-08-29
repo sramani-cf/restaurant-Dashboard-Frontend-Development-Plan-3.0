@@ -61,7 +61,7 @@ class ReservationService extends ApiService {
       duration: duration.toString(),
     })
 
-    return await this.request(`/restaurants/${restaurantId}/reservations/availability?${queryParams.toString()}`)
+    return await this.request(`/restaurants/${restaurantId}/reservations/availability/check?${queryParams.toString()}`)
   }
 
   // Get available time slots for a specific date
@@ -71,7 +71,7 @@ class ReservationService extends ApiService {
       partySize: partySize.toString(),
     })
 
-    return await this.request(`/restaurants/${restaurantId}/reservations/slots?${queryParams.toString()}`)
+    return await this.request(`/restaurants/${restaurantId}/reservations/availability/slots?${queryParams.toString()}`)
   }
 
   // Get table status and availability

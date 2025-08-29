@@ -75,10 +75,10 @@ class ApiService {
     })
   }
 
-  async resetPassword(token, newPassword) {
+  async resetPassword(token, password, confirmPassword) {
     return this.request('/auth/reset-password', {
       method: 'POST',
-      body: JSON.stringify({ token, newPassword }),
+      body: JSON.stringify({ token, password, confirmPassword }),
     })
   }
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { logUserProviderData, useUser } from '@/contexts/userContext'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -24,7 +25,30 @@ import {
   WifiOff
 } from 'lucide-react'
 
+
+
 export default function ReservationsPage() {
+  // Get user context with dynamic restaurantId
+
+
+  const { restaurantId, currentRestaurant, loading: userLoading, error: userError, restaurants, user } = useUser()
+  
+  // Log on client-side only
+  useEffect(() => {
+    console.log("CLIENT-SIDE: restaurantId => ", restaurantId)
+    console.log("CLIENT-SIDE: currentRestaurant => ", currentRestaurant)  
+    console.log("CLIENT-SIDE: userLoading => ", userLoading)
+  }, [restaurantId, currentRestaurant, userLoading])
+
+  //useContext console := 
+  logUserProviderData({
+    restaurantId,
+    currentRestaurant,
+    userLoading,
+    restaurants,
+    user
+  });
+
   // State management
   const [selectedTable, setSelectedTable] = useState(null)
   const [viewMode, setViewMode] = useState('floor-plan')
@@ -47,23 +71,28 @@ export default function ReservationsPage() {
   const [isConnected, setIsConnected] = useState(false)
   const [lastUpdate, setLastUpdate] = useState(new Date())
 
-  // Get restaurant ID (in production, this would come from user context or route params)
-  const restaurantId = process.env.NEXT_PUBLIC_DEFAULT_RESTAURANT_ID || 'demo-restaurant-id'
-
-  // Initialize data and WebSocket connection
+  // Initialize data and WebSocket connection when restaurantId is available
   useEffect(() => {
-    initializeData()
-    connectWebSocket()
+    if (!userLoading && restaurantId) {
+      // Disconnect any existing connection first
+      websocketService.disconnect()
+      
+      // Initialize data and connect to WebSocket for the current restaurant
+      initializeData()
+      connectWebSocket()
+    }
 
     return () => {
       websocketService.disconnect()
     }
-  }, [])
+  }, [restaurantId, userLoading])
 
   const initializeData = async () => {
     try {
       setLoading(true)
       setError(null)
+      
+      console.log(`🏪 Loading reservation data for restaurant: ${restaurantId} (${currentRestaurant?.name})`)
 
       // Fetch initial data in parallel
       const [tablesData, reservationsData, waitlistData, analyticsData] = await Promise.all([
@@ -273,13 +302,33 @@ export default function ReservationsPage() {
            reservation.phone?.includes(searchQuery)
   })
 
-  if (loading) {
+  // Show loading while user context or data is loading
+  if (userLoading || loading || !restaurantId) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
             <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-cyan-400" />
-            <p className="text-lg font-medium">Loading reservations...</p>
+            <p className="text-lg font-medium">
+              {userLoading ? 'Loading user data...' : 
+               !restaurantId ? 'No restaurant selected...' : 
+               'Loading reservations...'}
+            </p>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  // Show error if user has no restaurant access
+  if (userError) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <AlertCircle className="h-8 w-8 mx-auto mb-4 text-red-400" />
+            <p className="text-lg font-medium text-red-400">Error loading user data</p>
+            <p className="text-sm text-muted-foreground mt-2">{userError}</p>
           </div>
         </div>
       </DashboardLayout>
@@ -295,7 +344,7 @@ export default function ReservationsPage() {
             <h1 className="text-3xl font-bold">Reservations & Seating</h1>
             <div className="flex items-center gap-3 mt-1">
               <p className="text-muted-foreground">
-                Manage table reservations and floor plan
+                {currentRestaurant ? `${currentRestaurant.name} - ` : ''}Manage table reservations and floor plan
               </p>
               <div className="flex items-center gap-2">
                 {isConnected ? (

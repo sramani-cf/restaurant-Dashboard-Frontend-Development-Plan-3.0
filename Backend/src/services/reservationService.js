@@ -271,11 +271,11 @@ async function getAvailableTablesForSlot(restaurantId, date, time, duration, par
     const suitableTables = await prisma.table.findMany({
       where: {
         restaurantId,
-        capacity: { gte: partySize },
+        seats: { gte: partySize },
         isActive: true
       },
       orderBy: [
-        { capacity: 'asc' }, // Prefer smaller tables that fit the party
+        { seats: 'asc' }, // Prefer smaller tables that fit the party
         { number: 'asc' }
       ]
     });
@@ -297,8 +297,10 @@ async function getAvailableTablesForSlot(restaurantId, date, time, duration, par
         availableTables.push({
           id: table.id,
           number: table.number,
-          capacity: table.capacity,
-          location: table.location,
+          name: table.name || `Table ${table.number}`,
+          capacity: table.seats,
+          seats: table.seats,
+          location: table.section,
           section: table.section
         });
       }
@@ -613,10 +615,10 @@ async function checkAvailability(restaurantId, availabilityRequest) {
       isAvailable: availableTables.length > 0,
       availableTables: availableTables.map(table => ({
         id: table.id,
-        name: table.name,
-        capacity: table.capacity,
-        location: table.location,
-        isOptimal: table.capacity >= partySize && table.capacity <= partySize + 2
+        name: table.name || `Table ${table.number}`,
+        capacity: table.seats,
+        location: table.section,
+        isOptimal: table.seats >= partySize && table.seats <= partySize + 2
       })),
       waitlistAvailable: true
     };

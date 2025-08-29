@@ -407,6 +407,7 @@ class AuthController {
   async getProfile(req, res, next) {
     try {
       const userId = req.user.id;
+      
       const prisma = database.getClient();
       
       const user = await prisma.user.findUnique({

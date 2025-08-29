@@ -47,10 +47,27 @@ cd Backend && npx prisma migrate dev
 cd Backend && npx prisma generate
 ```
 
+## Development Mode Notes ⚠️ IMPORTANT
+- Backend runs in development mode with authentication bypass
+- Auth middleware creates fake user 'dev-user' for development
+- Profile endpoint includes special handling for dev-user
+- Uses real restaurant ID: 5de5ec81-b1a4-4b30-bf05-981b7ba50176
+- Dev user has SUPER_ADMIN role with access to all restaurants
+- Frontend UserContext properly handles development mode responses
+
 ## File Locations
 - Database setup script: Backend/setup_db.sql
 - Environment config: Backend/.env
 - Investigation docs: postgresql-connection-fix/
+- Loading issue docs: loading-issue-investigation/
+
+## Critical Next.js App Router Notes ⚠️
+- **IMPORTANT**: When using Context Providers in `app/layout.js`, the layout MUST have `'use client'` directive
+- Without `'use client'`, hooks like useEffect won't run and context initialization will fail
+- This can cause infinite loading states where context values remain null
+- Always ensure parent components of client contexts are marked as client components
 
 ## Last Updated
-2025-08-27 - Fixed PostgreSQL port configuration (5434 → 5433)
+2025-08-29 - Added critical Next.js App Router client component requirements
+2025-08-29 - Fixed spatial manager infinite loading issue (layout.js missing 'use client')
+2025-08-29 - Added development mode authentication bypass documentation

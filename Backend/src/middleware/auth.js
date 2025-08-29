@@ -9,21 +9,6 @@ const config = require('../config');
  */
 const authenticate = async (req, res, next) => {
   try {
-    // Development mode bypass
-    if (config.nodeEnv === 'development') {
-      req.user = {
-        id: 'dev-user',
-        role: 'SUPER_ADMIN',
-        restaurantStaff: [{
-          restaurantId: req.params.restaurantId || 'dev-restaurant',
-          isActive: true,
-          role: 'MANAGER'
-        }]
-      };
-      req.restaurant = { id: req.params.restaurantId || 'dev-restaurant' };
-      return next();
-    }
-
     // Extract token from Authorization header
     const authHeader = req.headers.authorization;
     if (!authHeader) {
@@ -150,11 +135,6 @@ const authorize = (...allowedRoles) => {
  * Restaurant-specific authorization middleware
  */
 const authorizeRestaurant = (req, res, next) => {
-  // Development mode bypass
-  if (config.nodeEnv === 'development') {
-    return next();
-  }
-
   if (!req.user) {
     return res.status(401).json({
       error: 'Authentication required',

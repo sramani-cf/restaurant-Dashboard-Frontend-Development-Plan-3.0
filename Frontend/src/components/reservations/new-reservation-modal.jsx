@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useUser } from '@/contexts/userContext'
 import { 
   X, 
   ChevronLeft, 
@@ -27,6 +28,9 @@ import reservationService from '@/services/reservationService'
 import { cn } from '@/lib/utils'
 
 const NewReservationModal = ({ isOpen, onClose, onSuccess }) => {
+  // Get dynamic restaurantId from user context
+  const { restaurantId } = useUser()
+  
   const [currentStep, setCurrentStep] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [availabilityLoading, setAvailabilityLoading] = useState(false)
@@ -59,7 +63,7 @@ const NewReservationModal = ({ isOpen, onClose, onSuccess }) => {
   })
 
   // Get restaurant ID
-  const restaurantId = process.env.NEXT_PUBLIC_DEFAULT_RESTAURANT_ID || 'demo-restaurant-id'
+  // restaurantId now comes from useUser() hook above
 
   // Focus first input when modal opens
   useEffect(() => {
@@ -111,7 +115,7 @@ const NewReservationModal = ({ isOpen, onClose, onSuccess }) => {
 
   // Real-time availability checking
   const checkAvailability = useCallback(async () => {
-    if (!formData.dateTime.date || !formData.dateTime.time || !formData.partySize) {
+    if (!formData.dateTime.date || !formData.dateTime.time || !formData.partySize || !restaurantId) {
       return
     }
 
@@ -184,6 +188,8 @@ const NewReservationModal = ({ isOpen, onClose, onSuccess }) => {
   }, [formData.dateTime.date, formData.partySize])
 
   const loadAvailableSlots = async () => {
+    if (!restaurantId) return
+    
     try {
       const slotsData = await reservationService.getAvailableSlots(
         restaurantId,
@@ -262,7 +268,12 @@ const NewReservationModal = ({ isOpen, onClose, onSuccess }) => {
   }
 
   const handleSubmit = async () => {
-    if (!canProceed()) return
+    if (!canProceed() || !restaurantId) {
+      if (!restaurantId) {
+        setError('No restaurant selected. Please ensure you have access to a restaurant.')
+      }
+      return
+    }
 
     setIsSubmitting(true)
     setError(null)

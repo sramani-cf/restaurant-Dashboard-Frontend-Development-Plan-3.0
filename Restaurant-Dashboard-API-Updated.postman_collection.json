@@ -38,7 +38,7 @@
     },
     {
       "key": "restaurantId",
-      "value": "",
+      "value": "5de5ec81-b1a4-4b30-bf05-981b7ba50176",
       "type": "string"
     },
     {
@@ -654,6 +654,89 @@
               "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/logout-all",
               "host": ["{{baseUrl}}"],
               "path": ["api", "{{apiVersion}}", "auth", "logout-all"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Forgot Password - Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testUserEmail}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/forgot-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "auth", "forgot-password"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Forgot Password - Test User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/forgot-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "auth", "forgot-password"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.test('Password reset successful', function () {",
+                  "        pm.response.to.have.status(200);",
+                  "        pm.expect(responseJson.message).to.include('successfully');",
+                  "    });",
+                  "    console.log('✅ Password reset successful. Please login with new password.');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"reset-token-from-email\",\n  \"password\": \"NewSecurePassword123!\",\n  \"confirmPassword\": \"NewSecurePassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/reset-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "auth", "reset-password"]
             }
           },
           "response": []
